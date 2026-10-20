@@ -1,0 +1,30 @@
+name: Actualizar iconos KLU.CHECK
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/update-icons.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  iconos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Crear PNG desde el símbolo vectorial
+        run: |
+          python -m pip install cairosvg
+          python - <<'PY'
+          import cairosvg
+          for n in (180, 192, 512):
+              out = f'assets/klu-check-{n}.png'
+              cairosvg.svg2png(url='assets/klu-check-icon.svg', write_to=out, output_width=n, output_height=n)
+              print(out)
+          PY
+      - name: Guardar los iconos
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/klu-check-180.png assets/klu-check-192.png assets/klu-check-512.png
+          git diff --cached --quiet || (git commit -m "assets: generar PNG del nuevo icono KLU.CHECK" && git push)
