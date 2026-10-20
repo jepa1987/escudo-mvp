@@ -1,5 +1,5 @@
-const CACHE_NAME = 'escudo-static-v15';
-const ASSETS = ['./', './index.html', './styles.css', './app.js', './engine.js', './analytics-config.js', './analytics.js', './privacy.js', './admin.html', './admin.js', './manifest.webmanifest', './assets/icon-192.png', './assets/icon-512.png', './assets/klu-check-icon.svg', './assets/klu-check-horizontal.svg'];
+const CACHE_NAME = 'escudo-static-v16';
+const ASSETS = ['./', './index.html', './styles.css', './app.js', './engine.js', './analytics-config.js', './analytics.js', './privacy.js', './admin.html', './admin.js', './manifest.webmanifest', './assets/icon-192.png', './assets/icon-512.png', './assets/klu-check-icon.svg', './assets/klu-check-horizontal.svg', './assets/klu-check-180.png', './assets/klu-check-192.png', './assets/klu-check-512.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
 });
