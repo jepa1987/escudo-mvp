@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <meta name="theme-color" content="#10243f"/>
+  <meta name="description" content="Revisa capturas, mensajes y URLs en busca de señales de fraude. Prototipo educativo de análisis local."/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <title>Escudo | Revisa si parece fraude</title>
+  <link rel="manifest" href="./manifest.webmanifest"/>
+  <link rel="icon" type="image/png" href="./assets/icon-192.png"/>
+  <link rel="apple-touch-icon" href="./assets/icon-192.png"/>
+  <link rel="stylesheet" href="./styles.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@6.0.1/dist/tesseract.min.js" defer></script>
+  <script src="./engine.js" defer></script>
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap nav">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M16 3 27 7v8c0 7-4.7 11.6-11 14-6.3-2.4-11-7-11-14V7l11-4Z" stroke="currentColor" stroke-width="2.2"/><path d="m10.8 15.5 3.4 3.6 7-7.2" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>escudo<span class="brand-dot">.</span></span></div>
+      <div class="nav-right"><span class="pill dot-pill"><span class="green-dot"></span>Análisis preventivo</span><span class="pill pilot">MVP · No oficial</span></div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <div class="eyebrow"><span class="eyebrow-icon">✦</span> Tu primera defensa contra engaños digitales</div>
+      <h1>Antes de hacer clic,<br/><span>revísalo aquí.</span></h1>
+      <p class="hero-lead">¿Te llegó un mensaje extraño? Sube una captura o pega el texto para identificar <strong>señales de posible fraude</strong> en segundos.</p>
+      <div class="trust"><span>◉ Sin crear cuenta</span><span>⌁ Sin abrir enlaces</span><span>▣ Imagen analizada en tu dispositivo</span></div>
+    </section>
+
+    <div class="workspace">
+      <section class="panel input-panel" aria-labelledby="analyzer-title">
+        <div class="panel-head"><div><div class="step-label">PASO 01 · ELIGE QUÉ REVISAR</div><h2 id="analyzer-title">Analiza un mensaje</h2></div><span class="mini-shield" aria-hidden="true">✳</span></div>
+        <div class="tabs" role="tablist" aria-label="Tipo de contenido">
+          <button type="button" class="tab active" id="tab-capture" role="tab" aria-selected="true" aria-controls="view-capture">▧ &nbsp; Captura o foto</button>
+          <button type="button" class="tab" id="tab-text" role="tab" aria-selected="false" aria-controls="view-text">☰ &nbsp; Texto o URL</button>
+        </div>
+        <div id="view-capture" role="tabpanel" aria-labelledby="tab-capture">
+          <input id="file-input" class="sr-only" type="file" accept="image/png,image/jpeg,image/webp,image/bmp,image/gif,image/heic,image/heif,image/*"/>
+          <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Selecciona una imagen o arrástrala aquí">
+            <div id="empty-drop">
+              <div class="upload-art" aria-hidden="true"><svg viewBox="0 0 60 60" fill="none"><rect x="9" y="15" width="42" height="33" rx="6" stroke="currentColor" stroke-width="2.5"/><circle cx="21" cy="26" r="4" stroke="currentColor" stroke-width="2.5"/><path d="m14 43 11-11 8 8 7-7 7 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M30 7v15m-6-6 6 6 6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <strong>Sube una foto o captura</strong>
+              <p>SMS, WhatsApp, correo, sitio web o URL</p>
+              <span class="select-fake">Elegir imagen <span aria-hidden="true">↗</span></span>
+              <small>JPG, PNG, WEBP · máximo 10 MB</small>
+            </div>
+            <div id="selected-drop" hidden>
+              <img id="image-preview" alt="Vista previa de la captura seleccionada"/>
+              <div class="image-meta"><strong id="selected-name"></strong><small id="selected-size"></small></div>
+              <span class="change-image">Cambiar imagen</span>
+            </div>
+          </div>
+          <div class="privacy-inline"><span aria-hidden="true">♧</span><div><strong>Tu captura se procesa localmente.</strong><br/>No implementamos carga de imágenes a un servidor. El motor OCR necesita descargar archivos técnicos desde Internet.</div></div>
+          <button type="button" class="primary-btn" id="analyze-image" disabled><span>Analizar captura</span><span class="btn-arrow">→</span></button>
+          <div id="ocr-progress" class="progress-wrap" hidden role="status" aria-live="polite"><div class="progress-label"><span id="progress-stage">Preparando reconocimiento de texto...</span><span id="progress-percent"></span></div><div class="progress-track"><div id="progress-bar"></div></div></div>
+        </div>
+        <div id="view-text" role="tabpanel" aria-labelledby="tab-text" hidden>
+          <label for="manual-text" class="field-label">Pega aquí el mensaje o la dirección web</label>
+          <textarea id="manual-text" class="field" rows="8" maxlength="15000" placeholder="Ejemplo: Tu cuenta ha sido bloqueada. Ingresa a http://... para verificar tus datos."></textarea>
+          <p class="field-hint">Nunca pegues contraseñas, NIP, CVV, códigos OTP ni información bancaria completa.</p>
+          <button class="primary-btn" id="analyze-text" type="button"><span>Revisar texto o URL</span><span class="btn-arrow">→</span></button>
+        </div>
+        <div id="error" class="error" role="alert" hidden></div>
+        <div class="example"><span>¿No tienes una captura a mano?</span><button id="try-example" type="button">Probar ejemplo sospechoso ↗</button></div>
+      </section>
+
+      <section class="panel results-panel" id="results-panel" aria-labelledby="result-heading">
+        <div class="panel-head"><div><div class="step-label">PASO 02 · TU EVALUACIÓN</div><h2 id="result-heading">Resultado del análisis</h2></div><span class="result-status" id="result-tag">Aún sin evaluar</span></div>
+        <div id="result-empty" class="result-empty"><div class="radar"><span class="radar-inner"><svg viewBox="0 0 70 70" fill="none" aria-hidden="true"><path d="m35 8 22 8v15c0 15-9 25-22 30-13-5-22-15-22-30V16l22-8Z" stroke="currentColor" stroke-width="2.4"/><path d="m25 34 7 7 14-15" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div><h3>Te ayudamos a detectar<br/>las señales de alerta.</h3><p>Sube tu captura o ingresa un texto para ver nuestro análisis, los posibles riesgos y qué hacer después.</p><div class="empty-tags"><span>Mensajes</span><span>Sitios web</span><span>Enlaces</span></div></div>
+        <div id="result-content" hidden>
+          <div id="risk-banner" class="risk-banner" role="status"><div class="risk-top"><span id="risk-icon" class="risk-icon">!</span><span id="risk-level" class="risk-level">ATENCIÓN</span></div><h3 id="risk-title"></h3><p id="risk-summary"></p></div>
+          <div class="result-group"><h4>Señales detectadas <span id="signals-count" class="count"></span></h4><div id="signals-list" class="signals-list"></div></div>
+          <div class="result-group" id="urls-section" hidden><h4>Enlaces encontrados <span class="count" id="urls-count"></span></h4><p class="microcopy">Se muestran como texto: la app <b>no</b> visita estos destinos.</p><div id="urls-list" class="urls-list"></div></div>
+          <details class="extracted"><summary>Ver / corregir texto reconocido <span>⌄</span></summary><label for="recognized-text" class="field-label">Confirma el texto: el reconocimiento puede confundirse con letras similares.</label><textarea id="recognized-text" class="field" rows="5" maxlength="15000"></textarea><button id="reanalyze" type="button" class="secondary-btn">Volver a analizar texto corregido ↗</button></details>
+          <div class="recommendation"><div class="rec-title">↗ &nbsp; ¿Qué hago ahora?</div><p id="rec-text"></p><button class="text-button" type="button" id="copy-report">Copiar recomendaciones</button><span class="copied" id="copied" hidden>Copiado ✓</span></div>
+          <button class="reset-btn" id="reset" type="button">↺ &nbsp; Analizar otro mensaje</button>
+        </div>
+      </section>
+    </div>
+
+    <section class="steps-row" aria-label="Cómo funciona"><div class="how-item"><span class="how-num">01</span><div><strong>Sube o pega</strong><small>Una imagen, texto o URL sospechosa</small></div></div><div class="how-item"><span class="how-num">02</span><div><strong>Revisa las señales</strong><small>El motor evalúa reglas explicables</small></div></div><div class="how-item"><span class="how-num">03</span><div><strong>Decide con más información</strong><small>Confirma siempre por medios oficiales</small></div></div></section>
+    <div class="bottom-note"><strong>Importante:</strong> Prototipo educativo: no consulta listas negras, reputación externa, propiedad de dominios, ni sistemas bancarios. Una URL con HTTPS también puede ser fraudulenta. No sustituye la atención de tu banco o institución financiera.</div>
+  </main>
+  <footer class="footer wrap"><span>© 2026 Escudo · Demostración independiente</span><span>Diseñado para evolucionar hacia una solución institucional</span></footer>
+</body>
+</html>
