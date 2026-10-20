@@ -25,12 +25,13 @@
   ];
   function looksLikeKluDomain(hostname) {
     const h = String(hostname || '').toLowerCase();
+    // OCR suele confundir 1 con l/I, y 0 con o en nombres de dominio.
     if (h.includes('klu')) return true;
     // Errores frecuentes y sustitución visual de un carácter.
     // Buscar también fragmentos separados por guion: corporate-k1u.one.
     // No es una prueba concluyente de fraude; genera una alerta preventiva.
     return h.split(/[.-]/).some(label =>
-      /^(?:k1u|kiu|kllu|kluu|clu|klv|k1uu)$/.test(label)
+      /^(?:k1u|kiu|kllu|kluu|clu|klv|k1uu|k1v|k-l-u|k-i-u|k-1-u)$/.test(label)
     ) || /(?:^|[.-])k-l-u(?:[.-]|$)/.test(h);
   }
   function normalizeOCRUrls(s) {
@@ -38,7 +39,10 @@
   }
 
   function extractUrls(text) {
-    const input = normalizeOCRUrls(defang(text)).replace(/hxxps?:\/\//gi, x => x.replace(/^hxx/i,'htt'));
+    const input = normalizeOCRUrls(defang(text))
+      .replace(/(?:https?\s*:\s*\/\s*\/)/gi, x=>x.replace(/\s/g,''))
+      .replace(/\b(corporate\s*[-–—]\s*k\s*[1li]\s*u\s*\.\s*(?:one|com|mx|net))\b/gi, x=>x.replace(/\s/g,'').replace(/[–—]/g,'-'))
+      .replace(/hxxps?:\/\//gi, x => x.replace(/^hxx/i,'htt'));
     const result = [], seen = new Set();
     for (const match of input.matchAll(URL_PATTERN)) {
       let original = match[0].replace(/[),;!?\]}]+$/g, '').replace(/\.$/, '');
