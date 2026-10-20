@@ -7,17 +7,19 @@ const client=window.supabase.createClient(cfg.url,cfg.anonKey,{auth:{persistSess
 function ui(logged){if(!logged && typeof clearEvidenceImages==='function')clearEvidenceImages();$('login').hidden=logged;$('dashboard').hidden=!logged;$('refresh').hidden=!logged;$('logout').hidden=!logged;}
 async function load(){
  const {data:{session}}=await client.auth.getSession();
- if(!session){ui(false);return;}
+ if(!session){ui(false);$('security-diagnostic').hidden=true;return;}
  // Un SELECT vacío por RLS no equivale a autorización. Verificar membresía explícita.
  const {data:membership,error:membershipError}=await client.from('admin_users')
    .select('user_id').eq('user_id',session.user.id).maybeSingle();
  if(membershipError || !membership){
+   $('security-diagnostic').hidden=false;
    ui(false);message('Acceso denegado: este usuario no es administrador autorizado.');
    return;
  }
  // Las políticas RLS siguen siendo obligatorias para cada consulta y descarga.
  const {data,error}=await client.from('analysis_events').select('created_at,risk,mode,flagged_domain,signal_count,url_count').order('created_at',{ascending:false}).limit(500);
  if(error){ui(false);message('No se pueden leer eventos. Comprueba que tu usuario esté autorizado en admin_users. '+error.message);return;}
+ $('security-diagnostic').hidden=true;
  ui(true);message('');
  const events=data||[];$('total').textContent=events.length;$('high').textContent=events.filter(x=>x.risk==='alto').length;$('warning').textContent=events.filter(x=>x.risk==='precaucion').length;$('domains').textContent=new Set(events.map(x=>x.flagged_domain).filter(Boolean)).size;
  $('rows').replaceChildren();
@@ -140,6 +142,28 @@ async function listEvidence(){
 $('evidence-refresh').addEventListener('click',listEvidence);
 $('evidence-close').addEventListener('click',()=>{
   clearEvidenceImages();$('evidence-status').textContent='Vista cerrada. Presiona «Consultar evidencias» para volver a cargar.';
+});
+
+
+$('security-test').addEventListener('click',async()=>{
+ const button=$('security-test'),out=$('security-test-result');
+ button.disabled=true;out.textContent='Consultando RLS y Storage con la sesión de prueba...';
+ try{
+  const {data:{session}}=await client.auth.getSession();
+  if(!session){out.textContent='No hay sesión de prueba. Inicia sesión primero.';return;}
+  const admin=await client.from('admin_users').select('user_id').eq('user_id',session.user.id).maybeSingle();
+  if(admin.data){out.textContent='Esta sesión es administradora. Realiza la prueba con un usuario SIN permisos.';return;}
+  if(admin.error){out.textContent='No se pudo confirmar el rol. No se ejecutó la prueba: '+admin.error.message;return;}
+  const meta=await client.from('evidence_records').select('id').limit(1);
+  let metaResult=meta.error?'ERROR de consulta: '+meta.error.message:(meta.data?.length?'FALLO: la consulta devolvió registros privados.':'CORRECTO: no se devolvieron registros privados.');
+  // Esta ruta corresponde únicamente a la evidencia ficticia registrada para la prueba.
+  // No renderizar ni conservar el contenido, incluso si el almacenamiento lo permite.
+  const file=await client.storage.from('escudo-evidencias').download('demo-prueba.png');
+  let storageResult=file.error?'CORRECTO si demo-prueba.png existe: descarga rechazada ('+file.error.message+').':'FALLO CRÍTICO: el usuario obtuvo acceso al archivo de prueba.';
+  out.textContent='RLS: '+metaResult+' | Storage: '+storageResult+
+    ' | Nota: una descarga rechazada también puede indicar archivo inexistente. Confirma su existencia con el administrador.';
+ }catch(_){out.textContent='No pudo completarse el diagnóstico por un error de conexión.';}
+ finally{button.disabled=false;}
 });
 
 $('refresh').addEventListener('click',load);$('logout').addEventListener('click',async()=>{await client.auth.signOut();ui(false);message('Sesión cerrada.')});client.auth.onAuthStateChange(()=>setTimeout(load,0));load();
