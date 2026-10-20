@@ -62,6 +62,27 @@
     'initializing api': 'Iniciando reconocimiento',
     'recognizing text': 'Reconociendo texto de la captura'
   };
+
+  // Segunda lectura de la barra de direcciones: suele ser pequeña en capturas completas.
+  // No se abre la URL ni se transmiten píxeles a ningún servicio propio.
+  async function readAddressBar(worker, file) {
+    const bitmap=await createImageBitmap(file);
+    try{
+      const stripHeight=Math.max(1,Math.round(bitmap.height*0.16));
+      const scale=Math.min(3,Math.max(1,1900/bitmap.width));
+      const canvas=document.createElement('canvas');
+      canvas.width=Math.round(bitmap.width*scale);
+      canvas.height=Math.round(stripHeight*scale);
+      const ctx=canvas.getContext('2d',{willReadFrequently:true});
+      if(!ctx)return '';
+      ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.imageSmoothingEnabled=true;
+      ctx.drawImage(bitmap,0,0,bitmap.width,stripHeight,0,0,canvas.width,canvas.height);
+      const result=await worker.recognize(canvas);
+      return (result.data?.text||'').trim();
+    }finally{bitmap.close();}
+  }
+
   async function analyzeImage() {
     if (state.running || !state.file) return;
     showError('');
@@ -81,7 +102,11 @@
         }
       });
       const response = await worker.recognize(state.file);
-      const text = (response.data && response.data.text ? response.data.text : '').trim();
+      let text = (response.data && response.data.text ? response.data.text : '').trim();
+      try{
+        const addressText=await readAddressBar(worker,state.file);
+        if(addressText)text+='\\n'+addressText;
+      }catch(err){ console.warn('Lectura complementaria de barra:',err); }
       if (!text || text.length < 4) throw new Error('No se pudo leer texto suficiente. Prueba una captura nítida o utiliza la pestaña «Texto o URL».');
       displayProgress('Lectura completada', 1);
       renderAnalysis(text);
