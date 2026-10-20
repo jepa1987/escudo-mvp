@@ -114,6 +114,25 @@
       description:'Se presenta como autoridad, plataforma o servicio sin identificadores verificables; un número móvil no demuestra legitimidad.',
       re:/(?:multas\s*mx|gobierno|sat|paqueteria|mensajeria|banco|servicio de envios)/i}
   ];
+  const RECRUITMENT_RULES = [
+    {id:'oferta_pago_inusual',weight:27,title:'Promesa de ganancias elevadas sin detalles verificables',
+     description:'Ofrece pagos diarios elevados sin explicar empresa, funciones, contrato ni proceso de contratación.',
+     re:/(?:pag[oa]|gananci[as]+|ingreso[s]?|sueldo|salario|remuneracion).{0,20}(?:\$\s*)?\d[\d,. ]{2,}(?:\s*(?:diari[oa]s?|por dia|al dia))|(?:\$\s*)?\d[\d,. ]{2,}\s*(?:diari[oa]s?|por dia|al dia)/i},
+    {id:'contacto_whatsapp',weight:20,title:'Invitación a continuar por WhatsApp',
+     description:'Propone cambiar a un chat privado sin aportar datos suficientes para verificar a quien ofrece la oportunidad.',
+     re:/(?:escribeme|contactame|mandame|hablame|envia(?:me)? mensaje).{0,45}(?:whatsapp|wa\.me)|wa\.me\//i},
+    {id:'oferta_ambigua',weight:16,title:'Oferta ambigua o poco profesional',
+     description:'Describe una oportunidad de forma vaga, sin explicar su naturaleza ni identificar al responsable.',
+     re:/(?:medio tiempo|sin experiencia|trabajo facil|gana dinero|pago diario|pag[oa] \d{3,}|sin invertir)/i}
+  ];
+  function recruitmentSignals(normalized,urls) {
+    const matches=RECRUITMENT_RULES.filter(s=>s.re.test(normalized)).map(({id,weight,title,description})=>({id,weight,title,description}));
+    const hasPay=matches.some(s=>s.id==='oferta_pago_inusual');
+    const hasWhatsapp=matches.some(s=>s.id==='contacto_whatsapp')||urls.some(u=>u.domain==='wa.me');
+    if(hasPay&&hasWhatsapp)matches.push({id:'oferta_contacto_riesgoso',weight:30,title:'Pago llamativo y contacto privado combinados',description:'La combinación de ganancias elevadas y un enlace directo a WhatsApp es característica de algunas estafas de empleo o captación. No compartas documentos ni dinero.'});
+    return matches;
+  }
+
   function contextualSignals(normalized,urls) {
     const result=GENERAL_RULES.filter(s=>s.re.test(normalized)).map(({id,weight,title,description})=>({id,weight,title,description}));
     const short=urls.some(u=>SHORTENERS.has(u.domain));
@@ -138,6 +157,7 @@
     const urls = extractUrls(input).map(inspectUrl);
     const signals = SIGNALS.filter(item => item.re.test(normalized)).map(({ id, weight, title, description }) => ({ id, weight, title, description }));
     signals.push(...contextualSignals(normalized,urls));
+    signals.push(...recruitmentSignals(normalized,urls));
     const hasRiskyUrl = urls.some(item => item.suspicious);
     let score = signals.reduce((sum, s) => sum + s.weight, 0);
     if (urls.length) {
