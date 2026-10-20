@@ -105,11 +105,16 @@
       let text = (response.data && response.data.text ? response.data.text : '').trim();
       try{
         const addressText=await readAddressBar(worker,state.file);
-        if(addressText)text+='\\n'+addressText;
+        if(addressText)text+='\n'+addressText;
       }catch(err){ console.warn('Lectura complementaria de barra:',err); }
       if (!text || text.length < 4) throw new Error('No se pudo leer texto suficiente. Prueba una captura nítida o utiliza la pestaña «Texto o URL».');
       displayProgress('Lectura completada', 1);
       renderAnalysis(text);
+      // Mostrar la lectura realmente obtenida para diagnosticar errores OCR.
+      document.querySelector('.extracted').open=true;
+      if (!EscudoEngine.extractUrls(text).length) {
+        showError('No se pudo identificar una URL en la captura. El resultado NO verifica la legitimidad del sitio. Revisa el texto reconocido y, si falta el dominio, escríbelo para analizarlo.');
+      }
     } catch (err) {
       console.warn('OCR:', err);
       showError(err && /texto suficiente/.test(err.message || '') ? err.message : 'No fue posible leer esta imagen. Usa PNG/JPG/WEBP, revisa tu conexión y prueba otra vez. También puedes pegar el texto directamente.');
