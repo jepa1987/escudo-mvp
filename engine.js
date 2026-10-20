@@ -14,8 +14,22 @@
   const SHORTENERS = new Set(['bit.ly', 'tinyurl.com', 't.co', 'cutt.ly', 'is.gd', 'rebrand.ly', 'shorturl.at', 'rb.gy', 'ow.ly', 'tiny.cc', 'goo.gl']);
   const WATCH_TLDS = new Set(['xyz', 'top', 'click', 'icu', 'tk', 'pw', 'vip']);
 
+
+  // Fuentes verificadas: www.klu.mx/contactos-autorizados. Lista curada, no consulta reputación.
+  const VERIFIED_BRANDS = [
+    {
+      id:'klu', name:'KLU', rootDomain:'klu.mx',
+      brand:/(?:^|[^a-z0-9])klu(?:$|[^a-z0-9])/i,
+      siteStyle:/\bklu\b.{0,85}\b(?:plataforma financiera|plataforma digital|sistema financiero|iniciar sesion|inicia sesion|accede a tu cuenta|abre tu cuenta|cuenta empresarial|servicios financieros|finanzas empresariales)\b|\bklu\s+mexico\s*[|—:-]/i
+    }
+  ];
+  const isUnderDomain = (host, root) => host === root || host.endsWith('.' + root);
+  function normalizeOCRUrls(s) {
+    return String(s || '').replace(/([a-z0-9-])\s*\.\s*(com|mx|net|org|gob|edu|io|co|app|site|info|xyz|click|online)\b/giu, '$1.$2');
+  }
+
   function extractUrls(text) {
-    const input = defang(text).replace(/hxxps?:\/\//gi, x => x.replace(/^hxx/i,'htt'));
+    const input = normalizeOCRUrls(defang(text)).replace(/hxxps?:\/\//gi, x => x.replace(/^hxx/i,'htt'));
     const result = [], seen = new Set();
     for (const match of input.matchAll(URL_PATTERN)) {
       let original = match[0].replace(/[),;!?\]}]+$/g, '').replace(/\.$/, '');
@@ -70,23 +84,52 @@
     const hasRiskyUrl = urls.some(item => item.suspicious);
     let score = signals.reduce((sum, s) => sum + s.weight, 0);
     if (urls.length) {
-      signals.push({ id:'enlaces', weight:0, title:'Contiene enlaces', description:'No abras enlaces hasta comprobar el destinatario y el dominio por otra vía.' });
+      signals.push({ id:'enlaces', weight:0, title:'Contiene enlaces', description:'No abras enlaces hasta comprobar el destino y el dominio por otra vía.' });
       score += 8;
     }
     if (hasRiskyUrl) {
       signals.push({ id:'url_anomala', weight:0, title:'Dirección web que requiere revisión', description:'Se detectaron elementos en el enlace que justifican precaución.' });
       score += 25;
     }
+    // Una captura puede imitar a una institución sin urgencia, NIP ni URL de aspecto extraño.
+    // Mencionar una marca en un sitio de noticias no implica por sí solo suplantación.
+    for (const brand of VERIFIED_BRANDS) {
+      if (!brand.brand.test(normalized) || !urls.length) continue;
+      const foreign = [...new Set(urls.filter(url =>
+        url.domain !== 'No se pudo interpretar' && !isUnderDomain(url.domain, brand.rootDomain)
+      ).map(url => url.domain))];
+      if (!foreign.length) continue;
+      const officialStyle = brand.siteStyle.test(normalized);
+      const domainNamesBrand = foreign.some(domain => domain.includes(brand.id) || /(?:^|[.-])kllu(?:[.-]|$)|(?:^|[.-])kliu(?:[.-]|$)/i.test(domain));
+      if (officialStyle || domainNamesBrand) {
+        signals.unshift({
+          id:'marca_dominio', weight:0,
+          title:'Posible suplantación de ' + brand.name + ': dominio no oficial',
+          description:'La captura presenta contenido de ' + brand.name + ' asociado a «' + foreign.slice(0,2).join('», «') + '», distinto del dominio publicado por la institución (' + brand.rootDomain + '). Verifica con la entidad antes de entrar.'
+        });
+        score = Math.max(score + 65, 75);
+        for (const url of urls) {
+          if (foreign.includes(url.domain)) {
+            url.reasons.push('Posible suplantación: se anuncia ' + brand.name + ' en un dominio diferente de ' + brand.rootDomain + '.');
+            url.suspicious = true;
+          }
+        }
+      } else {
+        signals.push({
+          id:'marca_externa', weight:0, title:'Referencia a ' + brand.name + ' desde un dominio ajeno',
+          description:'Se menciona ' + brand.name + ' junto a «' + foreign.slice(0,2).join('», «') + '». Puede ser una referencia informativa legítima; comprueba quién publica la página.'
+        });
+        score += 16;
+      }
+    }
     if (urls.length && SIGNALS.some(s => s.id === 'datos' && s.re.test(normalized))) score += 22;
     if (urls.length && SIGNALS.some(s => s.id === 'urgencia' && s.re.test(normalized))) score += 12;
     const level = score >= 55 ? 'alto' : score >= 22 ? 'precaucion' : 'indeterminado';
     return {
-      level,
-      score,
-      title: level === 'alto' ? 'Señales de riesgo elevado' : level === 'precaucion' ? 'Señales que requieren precaución' : 'No encontramos señales claras',
-      summary: level === 'alto' ? 'No sigas instrucciones del mensaje hasta verificar su origen con la institución por un canal independiente.' : level === 'precaucion' ? 'Antes de actuar, confirma la identidad del remitente y la legitimidad de cualquier enlace.' : 'Esto NO significa que sea legítimo: un fraude puede no mostrar señales obvias y el OCR puede omitir detalles.',
-      signals, urls,
-      analyzedCharacters: input.length
+      level, score,
+      title: level === 'alto' ? 'Señales de riesgo elevado' : level === 'precaucion' ? 'Señales que requieren precaución' : 'Evaluación no concluyente',
+      summary: level === 'alto' ? 'Se detectaron indicadores que podrían señalar fraude o suplantación. No entres ni sigas instrucciones antes de validar por un canal oficial independiente.' : level === 'precaucion' ? 'Antes de actuar, confirma la identidad del remitente y la legitimidad de cualquier enlace.' : 'No se detectaron señales con las reglas actuales. Esto NO significa que el enlace sea legítimo: un fraude puede no mostrar señales obvias y el OCR puede omitir detalles.',
+      signals, urls, analyzedCharacters: input.length
     };
   }
   return { analyze, extractUrls, inspectUrl };
