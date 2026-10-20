@@ -243,7 +243,7 @@
       const response = await worker.recognize(state.file);
       let best=qualityOCR(response.data);
       let text=best.text;
-      const photo=/image\\/hei[cf]/i.test(state.file.type)||/(?:IMG_|DCIM|foto|photo|camera)/i.test(state.file.name);
+      const photo=['image/heic','image/heif'].includes(state.file.type) || /(?:IMG_|DCIM|foto|photo|camera)/i.test(state.file.name);
       if(photo || best.confidence<72 || isUnreadableOCR(text)){
         displayProgress('Mejorando fotografía...',.55);
         try {
