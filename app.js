@@ -129,11 +129,14 @@
     const precaution = result.level === 'precaucion';
     const banner = $('risk-banner');
     banner.className = 'risk-banner' + (high ? ' high' : precaution ? '' : ' uncertain');
-    $('risk-icon').textContent = high ? '!' : precaution ? '?' : 'i';
-    $('risk-level').textContent = high ? 'RIESGO ELEVADO' : precaution ? 'PRECAUCIÓN' : 'EVALUACIÓN NO CONCLUYENTE';
-    $('risk-title').textContent = result.title;
+    banner.setAttribute('role', high ? 'alert' : 'status');
+    $('risk-icon').textContent = high ? '⚠' : precaution ? '?' : 'i';
+    $('risk-level').textContent = high ? 'ALERTA DE SEGURIDAD · RIESGO ELEVADO' : precaution ? 'PRECAUCIÓN' : 'EVALUACIÓN NO CONCLUYENTE';
+    $('risk-title').textContent = high ? '¡POSIBLE ESTAFA!' : result.title;
     $('risk-summary').textContent = result.summary;
-    $('result-tag').textContent = high ? 'Atención' : precaution ? 'Precaución' : 'Sin certeza';
+    $('risk-action').hidden = !high;
+    $('result-tag').textContent = high ? '¡POSIBLE ESTAFA!' : precaution ? 'Precaución' : 'Sin certeza';
+    $('result-tag').classList.toggle('high-risk-status', high);
     $('result-tag').style.color = high ? '#a23d37' : precaution ? '#916629' : '#517e92';
     $('signals-count').textContent = String(result.signals.length);
     $('signals-list').replaceChildren();
@@ -205,6 +208,7 @@
     $('analyze-image').disabled = true;
     $('result-empty').hidden = false; $('result-content').hidden = true;
     $('result-tag').textContent = 'Aún sin evaluar'; $('result-tag').style.color = '';
+    $('result-tag').classList.remove('high-risk-status');
     showError('');
     setTab('capture');
     document.querySelector('.input-panel').scrollIntoView({ behavior:'smooth', block:'start' });
