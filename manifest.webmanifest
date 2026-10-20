@@ -10,7 +10,7 @@
   "theme_color": "#0b3934",
   "lang": "es-MX",
   "icons": [
-    {"src":"./assets/klu-check-icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"},
+    {"src":"./assets/klu-check-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"},
     {"src":"./assets/klu-check-icon.svg","sizes":"any","type":"image/png","purpose":"any maskable"}
   ]
 }
