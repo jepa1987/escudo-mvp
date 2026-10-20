@@ -83,6 +83,38 @@
     }finally{bitmap.close();}
   }
 
+  function isUnreadableOCR(text) {
+    const urls=EscudoEngine.extractUrls(text);
+    if(urls.length)return false;
+    const tokens=(text.match(/[a-záéíóúñ]{3,}/gi)||[]);
+    const words=tokens.filter(w=>/[aeiouáéíóú]/i.test(w));
+    const junk=(text.match(/[|!;:=_]/g)||[]).length;
+    return words.length<4 || (junk>words.length*2 && words.length<12);
+  }
+
+  // Extrae la franja superior a mayor resolución en blanco y negro.
+  async function readFocusedBar(worker,file) {
+    const img=await createImageBitmap(file);
+    try{
+      const band=Math.round(img.height*0.11);
+      const scale=Math.max(2,Math.min(4,2200/img.width));
+      const canvas=document.createElement('canvas');
+      canvas.width=Math.round(img.width*scale);
+      canvas.height=Math.round(band*scale);
+      const context=canvas.getContext('2d',{willReadFrequently:true});
+      context.drawImage(img,0,0,img.width,band,0,0,canvas.width,canvas.height);
+      const pixels=context.getImageData(0,0,canvas.width,canvas.height);
+      for(let i=0;i<pixels.data.length;i+=4){
+        const val=.299*pixels.data[i]+.587*pixels.data[i+1]+.114*pixels.data[i+2];
+        const adjusted=val>175?255:val<105?0:Math.round((val-105)*255/70);
+        pixels.data[i]=pixels.data[i+1]=pixels.data[i+2]=adjusted;
+      }
+      context.putImageData(pixels,0,0);
+      const result=await worker.recognize(canvas);
+      return (result.data?.text||'').trim();
+    }finally{img.close();}
+  }
+
   async function analyzeImage() {
     if (state.running || !state.file) return;
     showError('');
@@ -104,10 +136,23 @@
       const response = await worker.recognize(state.file);
       let text = (response.data && response.data.text ? response.data.text : '').trim();
       try{
-        const addressText=await readAddressBar(worker,state.file);
-        if(addressText)text+='\n'+addressText;
+        const candidates=[
+          await readAddressBar(worker,state.file),
+          await readFocusedBar(worker,state.file)
+        ];
+        const focused=candidates.find(t=>EscudoEngine.extractUrls(t).some(u=>u.domain!=='No se pudo interpretar'));
+        if(focused)text+='\n'+focused;
+        else if(candidates[0])text+='\n'+candidates[0];
       }catch(err){ console.warn('Lectura complementaria de barra:',err); }
       if (!text || text.length < 4) throw new Error('No se pudo leer texto suficiente. Prueba una captura nítida o utiliza la pestaña «Texto o URL».');
+      if(isUnreadableOCR(text)){
+        $('recognized-text').value=text;
+        document.querySelector('.extracted').open=true;
+        $('result-empty').hidden=false;
+        $('result-content').hidden=true;
+        showError('NO SE PUDO LEER LA CAPTURA CON FIABILIDAD. No se emitió una clasificación. Recorta la barra de direcciones, súbela de nuevo o introduce manualmente la URL.');
+        return;
+      }
       displayProgress('Lectura completada', 1);
       renderAnalysis(text);
       // Mostrar la lectura realmente obtenida para diagnosticar errores OCR.
