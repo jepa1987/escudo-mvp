@@ -215,6 +215,39 @@
       return canvas;
     }finally{image.close();}
   }
+  // Lee el centro de una foto en bandas solapadas: los textos pequeños
+  // suelen perderse cuando OCR procesa toda la escena y su fondo.
+  async function readPhotoRegions(worker,file) {
+    const img=await createImageBitmap(file);
+    const results=[];
+    try {
+      const regions=[
+        [.08,.08,.84,.84],
+        [.13,.16,.74,.38],
+        [.13,.45,.74,.38]
+      ];
+      for(const [x,y,w,h] of regions){
+        const canvas=document.createElement('canvas');
+        const width=img.width*w,height=img.height*h;
+        const zoom=Math.min(3,2200/Math.max(width,height));
+        canvas.width=Math.max(1,Math.round(width*zoom));
+        canvas.height=Math.max(1,Math.round(height*zoom));
+        const ctx=canvas.getContext('2d');
+        ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.drawImage(img,img.width*x,img.height*y,width,height,0,0,canvas.width,canvas.height);
+        const value=qualityOCR((await worker.recognize(canvas)).data);
+        results.push(value);
+        canvas.width=canvas.height=1;
+      }
+    }finally{img.close();}
+    return results;
+  }
+  function meaningfulOCR(reading) {
+    const words=(reading.text.match(/[a-záéíóúñ]{3,}/gi)||[]).length;
+    const urls=EscudoEngine.extractUrls(reading.text).length;
+    return words*2+urls*16+Math.min(100,reading.confidence)*.2;
+  }
+
   function qualityOCR(data) {
     const text=(data?.text||'').trim();
     const confidence=Number(data?.confidence)||0;
@@ -257,6 +290,18 @@
           }
         }catch(err){console.warn('Preprocesamiento de imagen:',err);}
       }
+      // Segunda fase para fotos: OCR por regiones; no concatenar basura ni
+      // repetir fragmentos sobre un texto ya bien leído.
+      if(photo || best.confidence<78 || isUnreadableOCR(text)) {
+        try{
+          displayProgress('Buscando letras pequeñas en la foto...',.75);
+          const regions=await readPhotoRegions(worker,state.file);
+          const candidate=regions.sort((a,b)=>meaningfulOCR(b)-meaningfulOCR(a))[0];
+          if(candidate && meaningfulOCR(candidate)>meaningfulOCR(best)+5){
+            best=candidate;text=candidate.text;
+          }
+        }catch(err){console.warn('Lectura por regiones:',err);}
+      }
       if(!photo) {
         try{
           const bar=await readAddressBar(worker,state.file);
@@ -264,7 +309,7 @@
         }catch(err){console.warn('Lectura de encabezado:',err);}
       }
       if (!text || text.length < 4) throw new Error('No se pudo leer texto suficiente. Prueba una captura nítida o utiliza la pestaña «Texto o URL».');
-      if(isUnreadableOCR(text) || (best.confidence<35 && EscudoEngine.extractUrls(text).length===0)){
+      if(isUnreadableOCR(text) || (best.confidence<30 && EscudoEngine.extractUrls(text).length===0)){
         $('recognized-text').value=text;
         // OCR conservado internamente; no se despliega al usuario.
         $('result-empty').hidden=false;
@@ -276,9 +321,7 @@
       renderAnalysis(text);
       // Mostrar la lectura realmente obtenida para diagnosticar errores OCR.
       // OCR conservado internamente; no se despliega al usuario.
-      if (!EscudoEngine.extractUrls(text).length) {
-        showError('No se pudo identificar una URL en la captura. El resultado NO verifica la legitimidad del sitio. Si falta el enlace, escríbelo en Texto o URL.');
-      }
+      // Muchos SMS legítimos y fraudulentos no incluyen URL: no es un error OCR.
     } catch (err) {
       console.warn('OCR:', err);
       showError(err && /texto suficiente/.test(err.message || '') ? err.message : 'No fue posible leer esta imagen. Usa PNG/JPG/WEBP, revisa tu conexión y prueba otra vez. También puedes pegar el texto directamente.');
