@@ -56,6 +56,24 @@ async function retentionTest(){
  } catch(error){output.textContent='No se pudo contactar la función. Comprueba la conexión y los registros de Edge Functions.'}
  finally{button.disabled=false;}
 }
+
+$('set-password-form').addEventListener('submit', async (event)=>{
+ event.preventDefault();
+ const first=$('new-password'), second=$('confirm-password'), status=$('set-password-status'), button=$('set-password-btn');
+ status.textContent='';
+ if(first.value.length<12){status.textContent='Usa por lo menos 12 caracteres.';return;}
+ if(first.value!==second.value){status.textContent='Las contraseñas no coinciden.';return;}
+ const {data:{session}}=await client.auth.getSession();
+ if(!session){status.textContent='No hay una sesión activa. Vuelve a iniciar sesión.';return;}
+ button.disabled=true;button.textContent='Actualizando...';
+ try{
+   const {error}=await client.auth.updateUser({password:first.value});
+   if(error){status.textContent='No se pudo actualizar la contraseña: '+error.message+' Si se solicita reautenticación, no cierres la sesión actual hasta resolverlo.';}
+   else {status.textContent='Contraseña establecida. Ya puedes iniciar sesión con correo y contraseña en otros dispositivos.';first.value='';second.value='';}
+ }catch(_){status.textContent='No se pudo contactar Supabase. Vuelve a intentarlo.'}
+ finally{button.disabled=false;button.textContent='Crear o cambiar contraseña';}
+});
+
 $('retention-test').addEventListener('click',retentionTest);
 
 $('refresh').addEventListener('click',load);$('logout').addEventListener('click',async()=>{await client.auth.signOut();ui(false);message('Sesión cerrada.')});client.auth.onAuthStateChange(()=>setTimeout(load,0));load();
