@@ -1,16 +1,26 @@
 {
-  "id": "./",
+  "id": "./klucheck-pwa-v2",
   "name": "KLU.CHECK - Verifica antes de confiar",
   "short_name": "KLU.CHECK",
   "description": "Analiza mensajes, capturas y enlaces para reconocer señales de posible fraude.",
-  "start_url": "./",
+  "start_url": "./?app=klucheck17",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f7f7f2",
   "theme_color": "#0b3934",
   "lang": "es-MX",
   "icons": [
-    {"src":"./assets/klu-check-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"},
-    {"src":"./assets/klu-check-icon.svg","sizes":"any","type":"image/png","purpose":"any maskable"}
+    {
+      "src": "./assets/klu-check-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/klu-check-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
   ]
 }
