@@ -16,7 +16,7 @@
   <script src="./engine.js?v=20261020-8" defer></script>
   <script src="./analytics-config.js" defer></script>
   <script src="./analytics.js" defer></script>
-  <script src="./app.js?v=20261020-8" defer></script>
+  <script src="./app.js?v=20261020-9" defer></script>
 <style>
 .privacy-modal[hidden]{display:none!important}.privacy-modal{position:fixed;inset:0;z-index:9999;background:rgba(9,23,40,.8);display:grid;place-items:center;padding:16px;overflow:auto}.privacy-card{background:white;border-radius:18px;padding:25px;max-width:540px;width:100%;max-height:94dvh;overflow:auto;box-shadow:0 24px 80px #050f2259}.privacy-card h2{font-size:26px;line-height:1.2;margin:9px 0}.privacy-card p,.privacy-card li{font-size:14px;line-height:1.65;color:#3b5066}.privacy-card .privacy-buttons{display:grid;gap:9px;margin-top:17px}.privacy-card button{border:0;border-radius:10px;padding:13px 16px;font-weight:800;background:#143d62;color:#fff}.privacy-card button.secondary{background:#e8eff5;color:#173d62}.privacy-menu{font-size:12px;color:#4b657d;padding:12px 0}.privacy-menu button{background:transparent;border:1px solid #aec6d5;color:#1a5374;border-radius:8px;padding:8px;font-size:12px;font-weight:700}.privacy-feedback{font-size:12px;color:#2c6273}
 </style>
@@ -82,7 +82,7 @@
           <div id="risk-banner" class="risk-banner" role="status"><div class="risk-top"><span id="risk-icon" class="risk-icon">!</span><span id="risk-level" class="risk-level">ATENCIÓN</span></div><h3 id="risk-title"></h3><p id="risk-summary"></p><div id="risk-action" class="risk-action" hidden>🚫 NO ABRAS EL ENLACE NI COMPARTAS DATOS PERSONALES O BANCARIOS.</div></div>
           <div class="result-group"><h4>Señales detectadas <span id="signals-count" class="count"></span></h4><div id="signals-list" class="signals-list"></div></div>
           <div class="result-group" id="urls-section" hidden><h4>Enlaces encontrados <span class="count" id="urls-count"></span></h4><p class="microcopy">Se muestran como texto: la app <b>no</b> visita estos destinos.</p><div id="urls-list" class="urls-list"></div></div>
-          <details class="extracted"><summary>Ver / corregir texto reconocido <span>⌄</span></summary><label for="recognized-text" class="field-label">Confirma el texto: el reconocimiento puede confundirse con letras similares.</label><textarea id="recognized-text" class="field" rows="5" maxlength="15000"></textarea><button id="reanalyze" type="button" class="secondary-btn">Volver a analizar texto corregido ↗</button></details>
+          <details class="extracted"><summary>Texto leído de la imagen (toca para revisar) <span>⌄</span></summary><label for="recognized-text" class="field-label">Confirma el texto: el reconocimiento puede confundirse con letras similares.</label><textarea id="recognized-text" class="field" rows="5" maxlength="15000"></textarea><button id="reanalyze" type="button" class="secondary-btn">Volver a analizar texto corregido ↗</button></details>
           <div class="recommendation"><div class="rec-title">↗ &nbsp; ¿Qué hago ahora?</div><p id="rec-text"></p><button class="text-button" type="button" id="copy-report">Copiar recomendaciones</button><span class="copied" id="copied" hidden>Copiado ✓</span></div>
           <button class="reset-btn" id="reset" type="button">↺ &nbsp; Analizar otro mensaje</button>
         </div>
