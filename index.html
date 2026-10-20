@@ -11,7 +11,7 @@
   <link rel="manifest" href="./manifest.webmanifest?v=17"/>
   <link rel="icon" type="image/png" href="./assets/klu-check-192.png?v=17"/>
   <link rel="apple-touch-icon" sizes="180x180" href="./assets/klu-check-180.png?v=17"/>
-  <link rel="stylesheet" href="./styles.css?v=semaforo23"/>
+  <link rel="stylesheet" href="./styles.css?v=paste26"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -19,7 +19,7 @@
   <script src="./engine.js?v=20261020-emergency25" defer></script>
   <script src="./analytics-config.js" defer></script>
   <script src="./analytics.js" defer></script>
-  <script src="./app.js?v=hideocr24" defer></script>
+  <script src="./app.js?v=paste26" defer></script>
 <style>
 .privacy-modal[hidden]{display:none!important}.privacy-modal{position:fixed;inset:0;z-index:9999;background:rgba(9,23,40,.8);display:grid;place-items:center;padding:16px;overflow:auto}.privacy-card{background:white;border-radius:18px;padding:25px;max-width:540px;width:100%;max-height:94dvh;overflow:auto;box-shadow:0 24px 80px #050f2259}.privacy-card h2{font-size:26px;line-height:1.2;margin:9px 0}.privacy-card p,.privacy-card li{font-size:14px;line-height:1.65;color:#3b5066}.privacy-card .privacy-buttons{display:grid;gap:9px;margin-top:17px}.privacy-card button{border:0;border-radius:10px;padding:13px 16px;font-weight:800;background:#143d62;color:#fff}.privacy-card button.secondary{background:#e8eff5;color:#173d62}.privacy-menu{font-size:12px;color:#4b657d;padding:12px 0}.privacy-menu button{background:transparent;border:1px solid #aec6d5;color:#1a5374;border-radius:8px;padding:8px;font-size:12px;font-weight:700}.privacy-feedback{font-size:12px;color:#2c6273}
 </style>
@@ -62,6 +62,11 @@
               <div class="image-meta"><strong id="selected-name"></strong><small id="selected-size"></small></div>
               <div class="image-actions"><span class="change-image">Cambiar imagen</span><button id="remove-image" type="button" aria-label="Eliminar captura seleccionada" class="remove-image-btn">✕ Eliminar</button></div>
             </div>
+          </div>
+          <div class="paste-tools">
+            <button id="paste-image" type="button" class="secondary-btn">📋 Pegar imagen copiada</button>
+            <div id="paste-zone" contenteditable="true" role="textbox" aria-label="Pega aquí la imagen copiada" data-placeholder="O toca aquí y mantén presionado para seleccionar Pegar"></div>
+            <small>También puedes usar Ctrl+V o ⌘V. En iPhone, copia la imagen y prueba el botón o mantén presionado sobre el recuadro.</small>
           </div>
           <div class="privacy-inline"><span aria-hidden="true">♧</span><div><strong>Tu captura se procesa localmente.</strong><br/>No implementamos carga de imágenes a un servidor. El motor OCR necesita descargar archivos técnicos desde Internet.</div></div>
           <button type="button" class="primary-btn" id="analyze-image" disabled><span>Analizar captura</span><span class="btn-arrow">→</span></button>
