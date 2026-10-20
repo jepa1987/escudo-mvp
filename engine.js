@@ -92,11 +92,52 @@
     { id:'suplantacion', weight:12, title:'Se presenta como una institución', description:'Menciona soporte, autoridad o una entidad financiera; confirma por canales oficiales.', re:/(soporte tecnico|atencion al cliente|area de seguridad|departamento de fraude|tu banco|somos del banco|autoridad bancaria|servicio de paqueteria)/i }
   ];
 
+  // Reglas generales contextuales: no dependemos de que se mencione KLU.
+  // Son indicadores, nunca una prueba definitiva de actividad delictiva.
+  const GENERAL_RULES = [
+    {id:'paqueteria',weight:31,title:'Entrega condicionada a actualizar datos',
+      description:'Alega problemas en una dirección o entrega para llevarte a un enlace. Comprueba directamente en la tienda o paquetería.',
+      re:/(?:pedido|paquete|envio|entrega|direccion).{0,100}(?:incomplet|actualiz|correg|confirm|retenid)|(?:actualiz|correg|confirm).{0,100}(?:direccion|entrega|pedido|paquete)/i},
+    {id:'multa',weight:43,title:'Cobro o sanción vehicular no verificada',
+      description:'Exige pagar multas o amenaza retener un vehículo. Consulta el portal oficial de tu entidad sin utilizar el enlace del SMS.',
+      re:/(?:multa|infraccion|sancion|placa|vehiculo).{0,110}(?:pag|retencion|reten|embarg|sancion|multa)|(?:pag|retencion).{0,80}(?:vehiculo|placa|multa)/i},
+    {id:'amenaza',weight:26,title:'Amenaza de una consecuencia',
+      description:'Utiliza una consecuencia negativa (retención, sanción, suspensión o bloqueo) para presionar al destinatario.',
+      re:/(?:evit[ea]|de lo contrario|para que no).{0,75}(?:retencion|sancion|multa|bloqueo|cancelacion|suspension)|(?:reten|retencion) de (?:su|tu) vehiculo/i},
+    {id:'enlace_instruccion',weight:17,title:'Redirección a un enlace para realizar el trámite',
+      description:'El mensaje dirige el trámite al enlace recibido. Comprueba el procedimiento por un canal oficial independiente.',
+      re:/(?:actualiz|ingres|acced|visit|pag|confirm|verific|complet).{0,135}(?:https?:\/\/|www\.|bit\.ly|tinyurl\.com)|(?:https?:\/\/|www\.|bit\.ly).{0,85}(?:actualiz|pag|confirm|verific)/i},
+    {id:'ortografia',weight:9,title:'Redacción poco cuidada o incoherente',
+      description:'Hay expresiones o errores frecuentes en mensajes engañosos. Por sí solos no prueban fraude.',
+      re:/(?:sin ningun tipo de inconveniente|su direccion no esta completa|pague en linea y evite|la retencion de su vehiculo)/i},
+    {id:'remitente',weight:13,title:'Mensaje atribuido a una entidad sin identidad verificable',
+      description:'Se presenta como autoridad, plataforma o servicio sin identificadores verificables; un número móvil no demuestra legitimidad.',
+      re:/(?:multas\s*mx|gobierno|sat|paqueteria|mensajeria|banco|servicio de envios)/i}
+  ];
+  function contextualSignals(normalized,urls) {
+    const result=GENERAL_RULES.filter(s=>s.re.test(normalized)).map(({id,weight,title,description})=>({id,weight,title,description}));
+    const short=urls.some(u=>SHORTENERS.has(u.domain));
+    if(short && /(direccion|pedido|paquete|entrega|actualiz|confirm|pago|multa|sancion)/.test(normalized))
+      result.push({id:'acortador_tramite',weight:28,title:'Enlace acortado usado para un trámite',
+        description:'El enlace esconde su destino real mientras solicita realizar una gestión. Evita abrirlo desde el mensaje.'});
+    // Extensiones poco asociadas con entidades oficiales. Solo se ponderan más
+    // si la captura también contiene una reclamación de autoridad o cobro.
+    if(urls.some(u=>/\.shop$/.test(u.domain)) && /(multa|placa|sancion|retencion|gobierno|pag)/.test(normalized))
+      result.push({id:'sitio_cobro',weight:32,title:'Dominio comercial para supuesto cobro oficial',
+        description:'Una dirección terminada en .shop se utiliza para un supuesto pago de sanción. Valida el organismo y dominio oficial.'});
+    const number=normalized.match(/(?:\+?52\s*)?(?:\d[\s-]*){10}/);
+    if(number && /(multa|gobierno|paqueteria|banco|entrega|sancion)/.test(normalized))
+      result.push({id:'telefono_no_verificado',weight:9,title:'Número telefónico no verificado',
+        description:'El número visible no acredita que represente a la institución. Consulta contactos oficiales por separado.'});
+    return result;
+  }
+
   function analyze(text) {
     const input = String(text || '').trim().slice(0, 15000);
     const normalized = cleanText(input);
     const urls = extractUrls(input).map(inspectUrl);
     const signals = SIGNALS.filter(item => item.re.test(normalized)).map(({ id, weight, title, description }) => ({ id, weight, title, description }));
+    signals.push(...contextualSignals(normalized,urls));
     const hasRiskyUrl = urls.some(item => item.suspicious);
     let score = signals.reduce((sum, s) => sum + s.weight, 0);
     if (urls.length) {
