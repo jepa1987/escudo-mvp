@@ -4,7 +4,7 @@ const cfg=window.ESCUDO_ANALYTICS||{}, $=id=>document.getElementById(id);
 const message=t=>$('message').textContent=t;
 if(!/^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i.test(cfg.url)||!cfg.anonKey||!window.supabase){message('Panel pendiente de configurar. Consulta SETUP_ANALYTICS.md.');$('login-form').querySelector('button').disabled=true;return;}
 const client=window.supabase.createClient(cfg.url,cfg.anonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-function ui(logged){$('login').hidden=logged;$('dashboard').hidden=!logged;$('refresh').hidden=!logged;$('logout').hidden=!logged;}
+function ui(logged){if(!logged && typeof clearEvidenceImages==='function')clearEvidenceImages();$('login').hidden=logged;$('dashboard').hidden=!logged;$('refresh').hidden=!logged;$('logout').hidden=!logged;}
 async function load(){
  const {data:{session}}=await client.auth.getSession();
  if(!session){ui(false);return;}
@@ -75,6 +75,65 @@ $('set-password-form').addEventListener('submit', async (event)=>{
 });
 
 $('retention-test').addEventListener('click',retentionTest);
+
+
+const evidenceGallery=$('evidence-list');
+const evidenceObjects=new Set();
+function clearEvidenceImages(){
+  for(const u of evidenceObjects)URL.revokeObjectURL(u);
+  evidenceObjects.clear();
+  evidenceGallery.replaceChildren();
+  $('evidence-close').hidden=true;
+}
+function evidenceText(parent,tag,value){
+  const el=document.createElement(tag);el.textContent=String(value??'—');parent.appendChild(el);return el;
+}
+async function listEvidence(){
+  clearEvidenceImages();
+  const button=$('evidence-refresh'),status=$('evidence-status');
+  button.disabled=true;status.textContent='Consultando expedientes...';
+  try{
+    const {data:{session}}=await client.auth.getSession();
+    if(!session){status.textContent='Inicia sesión para ver las evidencias.';return;}
+    // Supabase RLS restringe los metadatos a admin_users.
+    const {data,error}=await client.from('evidence_records')
+      .select('id,storage_path,created_at,expires_at,status,risk,flagged_domain')
+      .neq('status','deleted').order('created_at',{ascending:false}).limit(40);
+    if(error){status.textContent='No se pudieron consultar los registros: '+error.message;return;}
+    if(!data?.length){status.textContent='No hay evidencias registradas todavía. Una carga manual en Storage no crea automáticamente un registro.';return;}
+    status.textContent='Se muestran '+data.length+' expedientes (máximo 40). Las imágenes solo se descargan si seleccionas «Ver imagen».';
+    for(const rec of data){
+      const card=document.createElement('article');card.className='evidence-item';
+      const title=evidenceText(card,'strong','Expediente '+String(rec.id).slice(0,8));
+      const dl=document.createElement('dl');
+      for(const [label,value] of [
+        ['Fecha',rec.created_at?new Date(rec.created_at).toLocaleString('es-MX'):'—'],
+        ['Riesgo',rec.risk||'Sin clasificar'],
+        ['Dominio',rec.flagged_domain||'No registrado'],
+        ['Estado',rec.status],
+        ['Vencimiento',rec.expires_at?new Date(rec.expires_at).toLocaleDateString('es-MX'):'—']
+      ]){evidenceText(dl,'dt',label);evidenceText(dl,'dd',value);}
+      card.appendChild(dl);
+      const open=document.createElement('button');open.type='button';open.textContent='Ver imagen';
+      open.addEventListener('click',async()=>{
+        open.disabled=true;open.textContent='Cargando...';
+        try{
+          const {data:file,error:downloadError}=await client.storage.from('escudo-evidencias').download(rec.storage_path);
+          if(downloadError)throw downloadError;
+          const url=URL.createObjectURL(file);evidenceObjects.add(url);
+          const img=document.createElement('img');img.className='evidence-preview';img.alt='Evidencia del expediente '+String(rec.id).slice(0,8);img.src=url;
+          card.appendChild(img);open.remove();$('evidence-close').hidden=false;
+        }catch(_){open.textContent='No se pudo abrir. Verifica permisos.';open.disabled=false;}
+      });
+      card.appendChild(open);evidenceGallery.appendChild(card);
+    }
+  }catch(_){status.textContent='No fue posible consultar las evidencias. Revisa la conexión.'}
+  finally{button.disabled=false;}
+}
+$('evidence-refresh').addEventListener('click',listEvidence);
+$('evidence-close').addEventListener('click',()=>{
+  clearEvidenceImages();$('evidence-status').textContent='Vista cerrada. Presiona «Consultar evidencias» para volver a cargar.';
+});
 
 $('refresh').addEventListener('click',load);$('logout').addEventListener('click',async()=>{await client.auth.signOut();ui(false);message('Sesión cerrada.')});client.auth.onAuthStateChange(()=>setTimeout(load,0));load();
 })();
