@@ -118,3 +118,11 @@ body{background:var(--klu-cream);color:var(--klu-ink)}
 
 /* Branding KLU.CHECK */
 .klu-brand-lockup{width:190px;height:45px;display:block;object-fit:contain;border-radius:8px}.hero h1 span{color:#dd9125}.hero .eyebrow{color:#0e6557}.site-header .nav{gap:15px}@media(max-width:600px){.klu-brand-lockup{width:145px;height:36px}.site-header .nav-right .pill{font-size:9px;padding:6px}}
+
+/* Semáforo KLU.CHECK: naranja para indicios y rojo para riesgo elevado */
+.risk-banner:not(.high):not(.uncertain){background:#fff0d6;border:2px solid #f49a19;color:#743b09}
+.risk-banner:not(.high):not(.uncertain) .risk-level{color:#9b4f04;font-size:12px}
+.risk-banner:not(.high):not(.uncertain) h3{color:#713707;font-size:24px;font-weight:800}
+.risk-banner:not(.high):not(.uncertain) .risk-icon{background:#e97805;color:#fff}
+.risk-banner:not(.high):not(.uncertain) p{color:#6c451f}
+.result-status:not(.high-risk-status){border-radius:999px}
