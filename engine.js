@@ -15,15 +15,20 @@
   const WATCH_TLDS = new Set(['xyz', 'top', 'click', 'icu', 'tk', 'pw', 'vip']);
 
 
-  // Fuentes verificadas: www.klu.mx/contactos-autorizados. Lista curada, no consulta reputación.
+  // Lista de dominios autorizados proporcionada por KLU para el MVP.
+  // Comparación EXACTA de hostname: otros subdominios no se autorizan por herencia.
+  const OFFICIAL_KLU_HOSTS = new Set(['klu.mx', 'www.klu.mx', 'corporate.klu.mx']);
   const VERIFIED_BRANDS = [
-    {
-      id:'klu', name:'KLU', rootDomain:'klu.mx',
+    { id:'klu', name:'KLU', rootDomain:'klu.mx',
       brand:/(?:^|[^a-z0-9])klu(?:$|[^a-z0-9])/i,
-      siteStyle:/\bklu\b.{0,85}\b(?:plataforma financiera|plataforma digital|sistema financiero|iniciar sesion|inicia sesion|accede a tu cuenta|abre tu cuenta|cuenta empresarial|servicios financieros|finanzas empresariales)\b|\bklu\s+mexico\s*[|—:-]/i
-    }
+      siteStyle:/\bklu\b.{0,85}\b(?:plataforma financiera|plataforma digital|sistema financiero|iniciar sesion|inicia sesion|accede a tu cuenta|abre tu cuenta|cuenta empresarial|servicios financieros|finanzas empresariales)\b|\bklu\s+mexico\s*[|—:-]/i }
   ];
-  const isUnderDomain = (host, root) => host === root || host.endsWith('.' + root);
+  function looksLikeKluDomain(hostname) {
+    const h = String(hostname || '').toLowerCase();
+    if (h.includes('klu')) return true;
+    // Errores frecuentes y sustitución visual de un carácter.
+    return h.split(/[.-]/).some(label => /^(?:k1u|kiu|kllu|kluu|clu|klv|k1uu|k-l-u)$/.test(label));
+  }
   function normalizeOCRUrls(s) {
     return String(s || '').replace(/([a-z0-9-])\s*\.\s*(com|mx|net|org|gob|edu|io|co|app|site|info|xyz|click|online)\b/giu, '$1.$2');
   }
@@ -51,6 +56,8 @@
       return { original: raw, domain: 'No se pudo interpretar', reasons: ['La dirección no tiene un formato verificable.'], suspicious: true };
     }
     const domain = parsed.hostname.toLowerCase().replace(/\.$/, '');
+    const officialKluDomain = OFFICIAL_KLU_HOSTS.has(domain);
+    const kluLookalike = !officialKluDomain && looksLikeKluDomain(domain);
     const parts = domain.split('.');
     const tld = parts[parts.length - 1];
     if (!domain || (!domain.includes('.') && domain !== 'localhost')) reasons.push('No parece un dominio público válido.');
@@ -62,10 +69,11 @@
     if (WATCH_TLDS.has(tld)) reasons.push('Extensión de dominio que merece revisión adicional (no implica fraude por sí misma).');
     if ((domain.match(/-/g) || []).length >= 2) reasons.push('El dominio tiene varios guiones: revisa posibles imitaciones.');
     if (parts.length >= 5) reasons.push('La dirección contiene muchos subdominios.');
+    if (kluLookalike) reasons.push('El dominio se parece a KLU, pero no coincide con los tres dominios autorizados para esta prueba. Posible suplantación.');
     if (/(?:verifica|validac|cuenta-segura|bloqueo|actualiza|premio|support|security|login-seguro|seguridad|acceso)/i.test(domain) && /(banco|bank|kl[uú]|bbva|santander|banamex|paypal|mercadopago|amazon|netflix)/i.test(domain)) {
       reasons.push('El dominio combina una marca o entidad con palabras de verificación o seguridad.');
     }
-    return { original: raw, domain, reasons, suspicious: reasons.length > 0 };
+    return { original: raw, domain, reasons, suspicious: reasons.length > 0, officialKluDomain, kluLookalike };
   }
 
   const SIGNALS = [
@@ -91,33 +99,34 @@
       signals.push({ id:'url_anomala', weight:0, title:'Dirección web que requiere revisión', description:'Se detectaron elementos en el enlace que justifican precaución.' });
       score += 25;
     }
-    // Una captura puede imitar a una institución sin urgencia, NIP ni URL de aspecto extraño.
-    // Mencionar una marca en un sitio de noticias no implica por sí solo suplantación.
+    // Sólo se reconocen los hostnames exactos facilitados por el responsable.
+    // Un dominio externo que simplemente menciona KLU no es necesariamente phishing.
     for (const brand of VERIFIED_BRANDS) {
-      if (!brand.brand.test(normalized) || !urls.length) continue;
       const foreign = [...new Set(urls.filter(url =>
-        url.domain !== 'No se pudo interpretar' && !isUnderDomain(url.domain, brand.rootDomain)
+        url.domain !== 'No se pudo interpretar' && !OFFICIAL_KLU_HOSTS.has(url.domain)
       ).map(url => url.domain))];
       if (!foreign.length) continue;
       const officialStyle = brand.siteStyle.test(normalized);
-      const domainNamesBrand = foreign.some(domain => domain.includes(brand.id) || /(?:^|[.-])kllu(?:[.-]|$)|(?:^|[.-])kliu(?:[.-]|$)/i.test(domain));
+      const domainNamesBrand = foreign.some(looksLikeKluDomain);
       if (officialStyle || domainNamesBrand) {
         signals.unshift({
           id:'marca_dominio', weight:0,
-          title:'Posible suplantación de ' + brand.name + ': dominio no oficial',
-          description:'La captura presenta contenido de ' + brand.name + ' asociado a «' + foreign.slice(0,2).join('», «') + '», distinto del dominio publicado por la institución (' + brand.rootDomain + '). Verifica con la entidad antes de entrar.'
+          title:'Posible suplantación de ' + brand.name + ': dominio no reconocido',
+          description:'Se detectó «' + foreign.slice(0, 2).join('», «') + '». No coincide con los dominios autorizados en esta prueba: klu.mx, www.klu.mx y corporate.klu.mx. Verifica con KLU antes de interactuar.'
         });
         score = Math.max(score + 65, 75);
         for (const url of urls) {
           if (foreign.includes(url.domain)) {
-            url.reasons.push('Posible suplantación: se anuncia ' + brand.name + ' en un dominio diferente de ' + brand.rootDomain + '.');
+            if (!url.reasons.some(reason => reason.includes('Posible suplantación'))) {
+              url.reasons.push('La captura parece atribuir a KLU un dominio no autorizado para esta prueba.');
+            }
             url.suspicious = true;
           }
         }
-      } else {
+      } else if (brand.brand.test(normalized)) {
         signals.push({
-          id:'marca_externa', weight:0, title:'Referencia a ' + brand.name + ' desde un dominio ajeno',
-          description:'Se menciona ' + brand.name + ' junto a «' + foreign.slice(0,2).join('», «') + '». Puede ser una referencia informativa legítima; comprueba quién publica la página.'
+          id:'marca_externa', weight:0, title:'Referencia a ' + brand.name + ' desde un sitio externo',
+          description:'El sitio externo puede estar mencionando a KLU con fines informativos. No es un dominio autorizado de KLU; verifica el contexto.'
         });
         score += 16;
       }
