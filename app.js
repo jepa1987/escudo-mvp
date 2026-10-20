@@ -169,7 +169,7 @@
       if (!text || text.length < 4) throw new Error('No se pudo leer texto suficiente. Prueba una captura nítida o utiliza la pestaña «Texto o URL».');
       if(isUnreadableOCR(text)){
         $('recognized-text').value=text;
-        document.querySelector('.extracted').open=true;
+        // OCR conservado internamente; no se despliega al usuario.
         $('result-empty').hidden=false;
         $('result-content').hidden=true;
         showError('NO SE PUDO LEER LA CAPTURA CON FIABILIDAD. No se emitió una clasificación. Recorta la barra de direcciones, súbela de nuevo o introduce manualmente la URL.');
@@ -178,7 +178,7 @@
       displayProgress('Lectura completada', 1);
       renderAnalysis(text);
       // Mostrar la lectura realmente obtenida para diagnosticar errores OCR.
-      document.querySelector('.extracted').open=true;
+      // OCR conservado internamente; no se despliega al usuario.
       if (!EscudoEngine.extractUrls(text).length) {
         showError('No se pudo identificar una URL en la captura. El resultado NO verifica la legitimidad del sitio. Revisa el texto reconocido y, si falta el dominio, escríbelo para analizarlo.');
       }
