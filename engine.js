@@ -133,6 +133,17 @@
     return matches;
   }
 
+  // La atención real del 911 puede enviar enlaces para compartir geolocalización.
+  // Señal contextual naranja: NO etiquetar automáticamente como phishing a Carbyne.
+  function emergencySignals(normalized,urls) {
+    const isEmergency=/(?:cdmx.{0,20}emergencias|emergencias.{0,20}cdmx|911|centro de emergencias|servicios de emergencia)/i.test(normalized);
+    const share=/(?:compartir|envia|enviar|habilitar|activar).{0,60}(?:ubicacion|localizacion|posicion|camara|video)|(?:presiona|pulsa|abre).{0,70}(?:link|enlace).{0,60}(?:compartir|ubicacion)|(?:emergencias).{0,100}(?:presiona|enlace|link)/i.test(normalized);
+    if(!isEmergency||!share||!urls.length)return [];
+    return [{id:'emergencia_ubicacion',weight:28,
+      title:'Solicitud de compartir datos durante una emergencia',
+      description:'Algunos servicios 911 utilizan enlaces legítimos para obtener ubicación o video. Si NO llamaste a emergencias o el operador no te anunció este SMS, no abras el enlace y verifica directamente con 911.'}];
+  }
+
   function contextualSignals(normalized,urls) {
     const result=GENERAL_RULES.filter(s=>s.re.test(normalized)).map(({id,weight,title,description})=>({id,weight,title,description}));
     const short=urls.some(u=>SHORTENERS.has(u.domain));
@@ -158,6 +169,7 @@
     const signals = SIGNALS.filter(item => item.re.test(normalized)).map(({ id, weight, title, description }) => ({ id, weight, title, description }));
     signals.push(...contextualSignals(normalized,urls));
     signals.push(...recruitmentSignals(normalized,urls));
+    signals.push(...emergencySignals(normalized,urls));
     const hasRiskyUrl = urls.some(item => item.suspicious);
     let score = signals.reduce((sum, s) => sum + s.weight, 0);
     if (urls.length) {
