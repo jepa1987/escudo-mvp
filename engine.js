@@ -202,7 +202,9 @@
     }
     if (urls.length && SIGNALS.some(s => s.id === 'datos' && s.re.test(normalized))) score += 22;
     if (urls.length && SIGNALS.some(s => s.id === 'urgencia' && s.re.test(normalized))) score += 12;
-    const level = score >= 55 ? 'alto' : score >= 22 ? 'precaucion' : 'indeterminado';
+    // Un indicio contextual tangible merece precaución, pero un enlace aislado no.
+    const meaningful = signals.filter(x => !['enlaces','marca_externa','remitente','telefono_no_verificado'].includes(x.id));
+    const level = score >= 55 ? 'alto' : (score >= 22 || meaningful.some(x=>x.weight >= 9)) ? 'precaucion' : 'indeterminado';
     return {
       level, score,
       title: level === 'alto' ? 'Señales de riesgo elevado' : level === 'precaucion' ? 'Señales que requieren precaución' : 'Evaluación no concluyente',
