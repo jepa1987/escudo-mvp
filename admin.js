@@ -8,7 +8,14 @@ function ui(logged){if(!logged && typeof clearEvidenceImages==='function')clearE
 async function load(){
  const {data:{session}}=await client.auth.getSession();
  if(!session){ui(false);return;}
- // RLS en Supabase decide si el usuario está autorizado. No dependemos de ocultar la URL.
+ // Un SELECT vacío por RLS no equivale a autorización. Verificar membresía explícita.
+ const {data:membership,error:membershipError}=await client.from('admin_users')
+   .select('user_id').eq('user_id',session.user.id).maybeSingle();
+ if(membershipError || !membership){
+   ui(false);message('Acceso denegado: este usuario no es administrador autorizado.');
+   return;
+ }
+ // Las políticas RLS siguen siendo obligatorias para cada consulta y descarga.
  const {data,error}=await client.from('analysis_events').select('created_at,risk,mode,flagged_domain,signal_count,url_count').order('created_at',{ascending:false}).limit(500);
  if(error){ui(false);message('No se pueden leer eventos. Comprueba que tu usuario esté autorizado en admin_users. '+error.message);return;}
  ui(true);message('');
