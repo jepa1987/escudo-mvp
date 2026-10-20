@@ -6,6 +6,13 @@
 </style></head><body><main>
 <header><div><h1>🛡️ Escudo · Panel privado</h1><div class="sub">Estadísticas y registro mínimo de análisis</div></div><div class="actions"><button id="refresh" hidden>Actualizar</button><button id="logout" hidden>Cerrar sesión</button></div></header>
 <section id="login" class="panel"><h2>Acceso de administrador</h2><p>Usa el correo registrado y autorizado en Supabase. Recibirás un enlace de acceso.</p><form id="login-form"><input id="email" type="email" autocomplete="email" placeholder="correo@empresa.com" required><button>Enviar enlace seguro</button></form><p class="warning">No existe contraseña de administrador dentro del código ni acceso público a los registros.</p></section>
-<section id="dashboard" hidden><div class="panel"><h2>Resumen</h2><div class="cards"><div class="metric"><b id="total">—</b><small>Consultas registradas</small></div><div class="metric"><b id="high">—</b><small>Riesgo elevado</small></div><div class="metric"><b id="warning">—</b><small>Precaución</small></div><div class="metric"><b id="domains">—</b><small>Dominios sospechosos distintos</small></div></div></div>
+<section id="dashboard" hidden>
+<div class="panel" aria-labelledby="retention-title">
+<h2 id="retention-title">Simulación de retención · 30 días</h2>
+<p class="warning">Comprueba cuántos expedientes están vencidos. Solo consulta los metadatos: no descarga imágenes, no modifica datos y no elimina archivos.</p>
+<button type="button" id="retention-test">Simular retención (sin borrar)</button>
+<p id="retention-result" role="status" aria-live="polite" class="warning">Aún no se ejecutó ninguna simulación.</p>
+</div>
+<div class="panel"><h2>Resumen</h2><div class="cards"><div class="metric"><b id="total">—</b><small>Consultas registradas</small></div><div class="metric"><b id="high">—</b><small>Riesgo elevado</small></div><div class="metric"><b id="warning">—</b><small>Precaución</small></div><div class="metric"><b id="domains">—</b><small>Dominios sospechosos distintos</small></div></div></div>
 <div class="panel"><h2>Últimos eventos <small>(máximo 500)</small></h2><p class="warning">Solo se reciben registros cuando el usuario lo autoriza. No se guardan capturas, mensajes ni URLs completas.</p><div class="table-wrap"><table><thead><tr><th>Fecha (UTC)</th><th>Riesgo</th><th>Tipo</th><th>Dominio señalado</th><th>Señales</th><th>URLs</th></tr></thead><tbody id="rows"></tbody></table></div></div></section><p id="message" role="status"></p>
-</main><script src="./analytics-config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script><script src="./admin.js"></script></body></html>
+</main><script src="./analytics-config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script><script src="./admin.js?v=retention1"></script></body></html>
