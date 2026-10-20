@@ -1,4 +1,4 @@
-const CACHE_NAME = 'escudo-static-v8';
+const CACHE_NAME = 'escudo-static-v9';
 const ASSETS = ['./', './index.html', './styles.css', './app.js', './engine.js', './analytics-config.js', './analytics.js', './privacy.js', './admin.html', './admin.js', './manifest.webmanifest', './assets/icon-192.png', './assets/icon-512.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
