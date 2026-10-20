@@ -27,7 +27,11 @@
     const h = String(hostname || '').toLowerCase();
     if (h.includes('klu')) return true;
     // Errores frecuentes y sustitución visual de un carácter.
-    return h.split(/[.-]/).some(label => /^(?:k1u|kiu|kllu|kluu|clu|klv|k1uu|k-l-u)$/.test(label));
+    // Buscar también fragmentos separados por guion: corporate-k1u.one.
+    // No es una prueba concluyente de fraude; genera una alerta preventiva.
+    return h.split(/[.-]/).some(label =>
+      /^(?:k1u|kiu|kllu|kluu|clu|klv|k1uu)$/.test(label)
+    ) || /(?:^|[.-])k-l-u(?:[.-]|$)/.test(h);
   }
   function normalizeOCRUrls(s) {
     return String(s || '').replace(/([a-z0-9-])\s*\.\s*(com|mx|net|org|gob|edu|io|co|app|site|info|xyz|click|online)\b/giu, '$1.$2');
