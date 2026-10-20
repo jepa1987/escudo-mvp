@@ -124,6 +124,7 @@
   function renderAnalysis(text) {
     state.rawText = text;
     state.result = EscudoEngine.analyze(text);
+    window.EscudoAnalytics?.submit(state.result,state.tab);
     const result = state.result;
     const high = result.level === 'alto';
     const precaution = result.level === 'precaucion';
