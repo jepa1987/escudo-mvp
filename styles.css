@@ -58,3 +58,60 @@
 .image-actions .change-image{margin:0;line-height:28px}
 .remove-image-btn{appearance:none;border:1px solid #eab9bd;background:#fff8f8;color:#aa343e;border-radius:7px;padding:5px 10px;min-height:30px;font:700 12px/1.3 inherit;cursor:pointer;box-shadow:none;max-width:100%;width:auto}
 .remove-image-btn:hover,.remove-image-btn:focus-visible{background:#fee8ea;border-color:#c85a65}
+
+/* Escudo · Identidad visual inspirada en la paleta compartida de KLU, 2026-10 */
+:root{
+  --klu-green:#0b3934;--klu-green-deep:#082e2a;--klu-gold:#ffad23;
+  --klu-cream:#f7f7f2;--klu-ink:#173f39;--klu-muted:#637a76;
+  --klu-border:#dce8e3;
+  font-family:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
+  color:var(--klu-ink);background:var(--klu-cream);
+}
+body,button,input,textarea,select{font-family:'Manrope',system-ui,-apple-system,sans-serif}
+body{background:var(--klu-cream);color:var(--klu-ink)}
+.site-header{background:#fff;border-color:var(--klu-border)}
+.brand{color:var(--klu-green);letter-spacing:-1.3px}
+.brand-mark{background:var(--klu-green);border-radius:12px}
+.brand-dot{color:var(--klu-gold)}
+.eyebrow,.step-label{color:#27746b}
+.hero h1,.panel h2,.result-empty h3{font-family:'Manrope',system-ui,sans-serif;color:var(--klu-green);font-weight:800}
+.hero h1 span{color:#bd7b12}
+.hero-lead{color:#536d67}
+.hero-lead strong{color:var(--klu-green)}
+.trust span{color:#55746c}
+.panel{border-color:var(--klu-border);box-shadow:0 14px 34px rgba(11,57,52,.07)}
+.mini-shield,.upload-art{background:#e6f2ed;color:var(--klu-green)}
+.tabs{background:#e8f0ec}
+.tab{color:#647b77;font-family:'Manrope',system-ui,sans-serif}
+.tab.active{color:var(--klu-green);background:#fff;box-shadow:0 3px 10px rgba(11,57,52,.1)}
+.dropzone{background:#f8faf8;border-color:#b5d3c7}
+.dropzone.drag{background:#e8f3ed;border-color:var(--klu-green)}
+.select-fake{color:var(--klu-green);border-color:#a3c6b9;background:#fff}
+.change-image,.example button{color:#11685b}
+.privacy-inline{color:#677e76}
+.privacy-inline>span,.privacy-inline strong{color:var(--klu-green)}
+.primary-btn{background:var(--klu-green);color:#fff;border-radius:12px;box-shadow:none}
+.primary-btn:hover:not(:disabled){background:#145147}
+.primary-btn:disabled{background:#aab8b2}
+.primary-btn:focus-visible,.tab:focus-visible,.dropzone:focus-visible,.remove-image-btn:focus-visible{
+ outline:3px solid var(--klu-gold);outline-offset:3px;
+}
+.field{border-color:#bcd4ca;background:#fff;color:var(--klu-ink)}
+.field:focus{outline:3px solid rgba(255,173,35,.35);border-color:var(--klu-gold)}
+.progress-track div{background:var(--klu-gold)}
+.result-status:not(.high-risk-status){background:#eef4f0;border-color:var(--klu-border);color:#4c6c63}
+.radar-inner{background:#e2f3e8;color:var(--klu-green)}
+.radar:after{background:var(--klu-gold)}
+.image-actions .change-image{color:#126a60}
+.remove-image-btn{font-family:'Manrope',system-ui,sans-serif;font-size:12px;padding:6px 11px;border-radius:8px;font-weight:700}
+/* El contraste de las alertas críticas debe prevalecer sobre el branding. */
+.risk-banner.high{
+  background:linear-gradient(148deg,#bf1120 0%,#9e0c19 100%);
+  border-color:#830c16;color:#fff;
+}
+.risk-banner.high h3,.risk-banner.high p,.risk-banner.high .risk-level{color:#fff}
+.result-status.high-risk-status{background:#a10d1a;color:#fff!important;border-color:#850b16}
+@media(max-width:600px){
+ .hero h1{letter-spacing:-1.6px}
+ .panel{border-radius:17px}
+}
