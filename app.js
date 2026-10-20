@@ -229,7 +229,7 @@
     banner.className = 'risk-banner' + (high ? ' high' : precaution ? '' : ' uncertain');
     banner.setAttribute('role', high ? 'alert' : 'status');
     $('risk-icon').textContent = high ? '⚠' : precaution ? '?' : 'i';
-    $('risk-level').textContent = high ? 'ALERTA DE SEGURIDAD · RIESGO ELEVADO' : precaution ? 'PRECAUCIÓN' : 'EVALUACIÓN NO CONCLUYENTE';
+    $('risk-level').textContent = high ? 'ALERTA DE SEGURIDAD · RIESGO ELEVADO' : precaution ? 'SEÑALES DE ALERTA · PRECAUCIÓN' : 'EVALUACIÓN NO CONCLUYENTE';
     $('risk-title').textContent = high ? '¡POSIBLE ESTAFA!' : result.title;
     $('risk-summary').textContent = result.summary;
     $('risk-action').hidden = !high;
