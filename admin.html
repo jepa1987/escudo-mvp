@@ -16,6 +16,12 @@ body{font-family:Manrope,system-ui,sans-serif;background:#f7f7f2;color:#0b3934}b
 <details style="margin-top:19px"><summary style="cursor:pointer;font-weight:700">Acceso alternativo por correo</summary>
 <p class="warning">Puedes solicitar un enlace de acceso, sujeto a los límites de envío de Supabase.</p>
 <form id="login-form" style="display:flex;gap:8px;flex-wrap:wrap"><input id="email" type="email" autocomplete="email" placeholder="correo@empresa.com" required><button type="submit">Enviar enlace seguro</button></form></details>
+<div id="security-diagnostic" hidden style="margin-top:18px;padding:15px;border:1px solid #dce8e3;border-radius:12px;background:#f7faf8">
+<strong>Diagnóstico de permisos · usuario sin privilegios</strong>
+<p class="warning">Prueba exclusivamente con el usuario secundario de prueba. Consulta si RLS oculta expedientes e intenta acceder a la imagen ficticia demo-prueba.png. No muestra ni guarda fotografías, tokens o datos personales.</p>
+<button id="security-test" type="button">Comprobar permisos de Supabase</button>
+<p id="security-test-result" role="status" aria-live="polite" class="warning">Aún no ejecutado.</p>
+</div>
 <p class="warning">Si tu cuenta solo usaba enlaces por correo, primero tendrás que crear una contraseña para ese mismo usuario en Supabase Authentication. No introduzcas aquí claves del proyecto ni contraseñas de la base de datos.</p></section>
 <section id="dashboard" hidden>
 <div class="panel" aria-labelledby="retention-title">
@@ -43,4 +49,4 @@ body{font-family:Manrope,system-ui,sans-serif;background:#f7f7f2;color:#0b3934}b
 </form><p id="set-password-status" role="status" aria-live="polite" class="warning"></p>
 </details>
 </section><p id="message" role="status"></p>
-</main><script src="./analytics-config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script><script src="./admin.js?v=security19"></script></body></html>
+</main><script src="./analytics-config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script><script src="./admin.js?v=security20"></script></body></html>
