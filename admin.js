@@ -16,6 +16,20 @@ async function load(){
  $('rows').replaceChildren();
  for(const e of events){const tr=document.createElement('tr');const vals=[e.created_at?.replace('T',' ').slice(0,19)||'',e.risk,e.mode,e.flagged_domain||'—',e.signal_count,e.url_count];for(const val of vals){const td=document.createElement('td');td.textContent=String(val??'');tr.appendChild(td)}$('rows').appendChild(tr);}
 }
+$('password-login-form').addEventListener('submit',async event=>{
+ event.preventDefault();
+ const button=$('password-login-button');button.disabled=true;button.textContent='Verificando acceso...';
+ message('');
+ try{
+   const email=$('email-password').value.trim();
+   const password=$('login-password').value;
+   const {error}=await client.auth.signInWithPassword({email,password});
+   $('login-password').value='';
+   if(error){message('No se pudo iniciar sesión. Comprueba que tu cuenta tenga contraseña y que los datos sean correctos. '+(error.message||''));}
+   else {await load();}
+ }catch(_){message('No se pudo conectar con el servicio de autenticación. Intenta nuevamente.');}
+ finally {button.disabled=false;button.textContent='Entrar al panel';}
+});
 $('login-form').addEventListener('submit',async event=>{event.preventDefault();message('Enviando acceso...');const {error}=await client.auth.signInWithOtp({email:$('email').value,options:{emailRedirectTo:location.origin+location.pathname}});message(error?'Error: '+error.message:'Si el correo está habilitado, revisa tu bandeja de entrada.');});
 
 async function retentionTest(){
