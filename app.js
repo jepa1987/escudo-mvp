@@ -39,6 +39,28 @@
     $('analyze-image').disabled = false;
     $('analyze-image').querySelector('span').textContent = 'Analizar captura';
   }
+  $('remove-image').addEventListener('click', event => {
+    event.preventDefault();
+    event.stopPropagation();
+    if(state.running)return;
+    releaseImage();
+    state.file=null;
+    $('file-input').value='';
+    $('image-preview').removeAttribute('src');
+    $('selected-name').textContent='';
+    $('selected-size').textContent='';
+    $('selected-drop').hidden=true;
+    $('empty-drop').hidden=false;
+    $('analyze-image').disabled=true;
+    $('analyze-image').querySelector('span').textContent='Analizar captura';
+    $('ocr-progress').hidden=true;
+    $('recognized-text').value='';
+    state.rawText='';
+    state.result=null;
+    $('result-content').hidden=true;
+    $('result-empty').hidden=false;
+    showError('');
+  });
   $('file-input').addEventListener('change', event => useFile(event.target.files[0]));
   $('dropzone').addEventListener('click', () => { if (!state.running) $('file-input').click(); });
   $('dropzone').addEventListener('keydown', event => {
