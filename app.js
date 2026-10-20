@@ -156,6 +156,7 @@
       const card = document.createElement('div'); card.className = 'url-item';
       appendTextElement(card, 'div', 'url-host', url.domain);
       appendTextElement(card, 'div', 'url-raw', url.original);
+      if (url.officialKluDomain) appendTextElement(card, 'p', 'microcopy', 'Dominio incluido en la lista autorizada de KLU. Esto no certifica que la página o su contenido sean seguros.');
       if (url.reasons.length) {
         for (const reason of url.reasons) appendTextElement(card, 'p', 'url-alert', '⚠ ' + reason);
       } else {
