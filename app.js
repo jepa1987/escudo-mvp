@@ -273,43 +273,31 @@
           if (message.status) displayProgress(stages[message.status] || 'Procesando la imagen...', message.progress || 0);
         }
       });
-      const response = await worker.recognize(state.file);
-      let best=qualityOCR(response.data);
-      let text=best.text;
-      const photo=['image/heic','image/heif'].includes(state.file.type) || /(?:IMG_|DCIM|foto|photo|camera)/i.test(state.file.name);
-      if(photo || best.confidence<72 || isUnreadableOCR(text)){
-        displayProgress('Mejorando fotografía...',.55);
-        try {
-          const enhanced=await photoCanvas(state.file,false);
-          const result=qualityOCR((await worker.recognize(enhanced)).data);
-          if(result.score>best.score+3){best=result;text=result.text;}
-          if(best.confidence<65 || isUnreadableOCR(text)){
-            const stronger=await photoCanvas(state.file,true);
-            const retry=qualityOCR((await worker.recognize(stronger)).data);
-            if(retry.score>best.score+3){best=retry;text=retry.text;}
-          }
-        }catch(err){console.warn('Preprocesamiento de imagen:',err);}
-      }
-      // Segunda fase para fotos: OCR por regiones; no concatenar basura ni
-      // repetir fragmentos sobre un texto ya bien leído.
-      if(photo || best.confidence<78 || isUnreadableOCR(text)) {
+      // Una sola lectura OCR para evitar 4-7 pasadas lentas en iPhone.
+      // Escalamos imágenes enormes antes de OCR, sin filtros costosos.
+      let input=state.file;
+      let resized=null;
+      try{
+        const bitmap=await createImageBitmap(state.file);
         try{
-          displayProgress('Buscando letras pequeñas en la foto...',.75);
-          const regions=await readPhotoRegions(worker,state.file);
-          const candidate=regions.sort((a,b)=>meaningfulOCR(b)-meaningfulOCR(a))[0];
-          if(candidate && meaningfulOCR(candidate)>meaningfulOCR(best)+5){
-            best=candidate;text=candidate.text;
+          const maxDim=Math.max(bitmap.width,bitmap.height);
+          if(maxDim>2200){
+            resized=document.createElement('canvas');
+            const factor=2200/maxDim;
+            resized.width=Math.round(bitmap.width*factor);
+            resized.height=Math.round(bitmap.height*factor);
+            resized.getContext('2d').drawImage(bitmap,0,0,resized.width,resized.height);
+            input=resized;
           }
-        }catch(err){console.warn('Lectura por regiones:',err);}
-      }
-      if(!photo) {
-        try{
-          const bar=await readAddressBar(worker,state.file);
-          if(EscudoEngine.extractUrls(bar).length && !text.includes(bar))text+='\\n'+bar;
-        }catch(err){console.warn('Lectura de encabezado:',err);}
-      }
+        }finally{bitmap.close();}
+      }catch(err){console.warn('Redimensionamiento no disponible:',err);}
+      displayProgress('Reconociendo texto...',.45);
+      const response=await worker.recognize(input);
+      if(resized)resized.width=resized.height=1;
+      const best=qualityOCR(response.data);
+      const text=best.text;
       if (!text || text.length < 4) throw new Error('No se pudo leer texto suficiente. Prueba una captura nítida o utiliza la pestaña «Texto o URL».');
-      if(isUnreadableOCR(text) || (best.confidence<30 && EscudoEngine.extractUrls(text).length===0)){
+      if(isUnreadableOCR(text) || (best.confidence<45 && EscudoEngine.extractUrls(text).length===0)){
         $('recognized-text').value=text;
         // OCR conservado internamente; no se despliega al usuario.
         $('result-empty').hidden=false;
@@ -318,6 +306,13 @@
         return;
       }
       displayProgress('Lectura completada', 1);
+      // OCR con baja fiabilidad: nunca mostrar gris como si fuera una revisión completa.
+      if(best.confidence < 52 && EscudoEngine.analyze(text).level === 'indeterminado'){
+        $('result-empty').hidden=false;
+        $('result-content').hidden=true;
+        showError('La foto no permite leer suficiente información para evaluar el riesgo. Recorta el mensaje en Fotos, acércalo y vuelve a intentarlo.');
+        return;
+      }
       renderAnalysis(text);
       // Mostrar la lectura realmente obtenida para diagnosticar errores OCR.
       // OCR conservado internamente; no se despliega al usuario.
