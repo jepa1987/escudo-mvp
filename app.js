@@ -283,7 +283,7 @@
     if (!state.result) return;
     const result = state.result;
     const report = [
-      'ESCUDO — Evaluación preventiva (no certifica fraude ni seguridad)',
+      'KLU.CHECK — Evaluación preventiva (no certifica fraude ni seguridad)',
       result.title,
       result.summary,
       ...result.signals.map(s => '• ' + s.title + ': ' + s.description),
