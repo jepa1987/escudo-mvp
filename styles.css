@@ -52,3 +52,9 @@
 @media(prefers-reduced-motion:reduce){
   .risk-banner.high{transition:none;animation:none}
 }
+
+/* Acciones discretas de captura */
+.image-actions{display:flex;justify-content:center;align-items:center;gap:16px;margin-top:10px;flex-wrap:wrap}
+.image-actions .change-image{margin:0;line-height:28px}
+.remove-image-btn{appearance:none;border:1px solid #eab9bd;background:#fff8f8;color:#aa343e;border-radius:7px;padding:5px 10px;min-height:30px;font:700 12px/1.3 inherit;cursor:pointer;box-shadow:none;max-width:100%;width:auto}
+.remove-image-btn:hover,.remove-image-btn:focus-visible{background:#fee8ea;border-color:#c85a65}
