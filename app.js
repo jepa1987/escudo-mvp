@@ -70,6 +70,64 @@
   for (const action of ['dragleave', 'drop']) $('dropzone').addEventListener(action, e => { e.preventDefault(); $('dropzone').classList.remove('drag'); });
   $('dropzone').addEventListener('drop', event => { if (!state.running) useFile(event.dataTransfer.files[0]); });
 
+  // Soporte de portapapeles: botón (cuando el navegador permite read())
+  // y evento paste del sistema, incluido el menú Pegar de iOS.
+  const pasteZone = $('paste-zone');
+  function pastedImage(file) {
+    if (!file || state.running) return false;
+    if (!file.type.startsWith('image/')) return false;
+    setTab('capture');
+    useFile(file);
+    pasteZone.replaceChildren();
+    return true;
+  }
+  function handlePaste(event) {
+    if (state.running) return;
+    const items = Array.from(event.clipboardData?.items || []);
+    const imageItem = items.find(item => item.kind === 'file' && item.type.startsWith('image/'));
+    if (!imageItem) {
+      if (event.target === pasteZone) {
+        event.preventDefault();
+        showError('El portapapeles no contiene una imagen. Copia una captura de pantalla e inténtalo otra vez.');
+      }
+      return;
+    }
+    const file = imageItem.getAsFile();
+    if (file) {
+      event.preventDefault();
+      pastedImage(file);
+    }
+  }
+  document.addEventListener('paste', handlePaste);
+  $('paste-image').addEventListener('click', async () => {
+    if (state.running) return;
+    if (!navigator.clipboard?.read) {
+      pasteZone.focus();
+      showError('Tu navegador no permite leer imágenes con este botón. Mantén presionado en el recuadro y elige «Pegar», o usa Fototeca.');
+      return;
+    }
+    try {
+      const entries = await navigator.clipboard.read();
+      for (const entry of entries) {
+        const mime = entry.types.find(type => type.startsWith('image/'));
+        if (!mime) continue;
+        const blob = await entry.getType(mime);
+        const extension = mime.split('/')[1]?.replace('jpeg','jpg') || 'png';
+        const file = new File([blob], 'captura-pegada.' + extension, {type:mime});
+        if (pastedImage(file)) return;
+      }
+      showError('No encontramos una imagen en el portapapeles. Copia la captura y vuelve a intentarlo.');
+    } catch (err) {
+      pasteZone.focus();
+      showError('No fue posible acceder al portapapeles. Mantén presionado en el recuadro y selecciona «Pegar».');
+    }
+  });
+  pasteZone.addEventListener('input', () => {
+    // No conservar contenido incrustado: el análisis se realiza con el archivo.
+    const img = pasteZone.querySelector('img');
+    if (img) pasteZone.replaceChildren();
+  });
+
   function displayProgress(message, value) {
     $('ocr-progress').hidden = false;
     $('progress-stage').textContent = message;
