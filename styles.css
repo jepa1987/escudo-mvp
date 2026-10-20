@@ -115,3 +115,6 @@ body{background:var(--klu-cream);color:var(--klu-ink)}
  .hero h1{letter-spacing:-1.6px}
  .panel{border-radius:17px}
 }
+
+/* Branding KLU.CHECK */
+.klu-brand-lockup{width:190px;height:45px;display:block;object-fit:contain;border-radius:8px}.hero h1 span{color:#dd9125}.hero .eyebrow{color:#0e6557}.site-header .nav{gap:15px}@media(max-width:600px){.klu-brand-lockup{width:145px;height:36px}.site-header .nav-right .pill{font-size:9px;padding:6px}}
