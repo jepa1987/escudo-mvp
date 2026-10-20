@@ -24,7 +24,7 @@ async function retentionTest(){
  try{
   const {data:{session},error:sessionError}=await client.auth.getSession();
   if(sessionError || !session?.access_token){output.textContent='Tu sesión terminó. Inicia sesión nuevamente.';return;}
-  const response=await fetch(cfg.url.replace(/\\/$/,'')+'/functions/v1/escudo-retention',{
+  const response=await fetch((cfg.url.endsWith('/') ? cfg.url.slice(0,-1) : cfg.url)+'/functions/v1/escudo-retention',{
    method:'POST',
    headers:{'Authorization':'Bearer '+session.access_token,'apikey':cfg.anonKey,'Content-Type':'application/json'},
    body:'{}',cache:'no-store'
