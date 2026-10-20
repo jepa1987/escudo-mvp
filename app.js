@@ -195,6 +195,33 @@
     }finally{img.close();}
   }
 
+  async function photoCanvas(file, binary=false) {
+    const image=await createImageBitmap(file);
+    try {
+      const scale=Math.min(2,2400/Math.max(image.width,image.height));
+      const canvas=document.createElement('canvas');
+      canvas.width=Math.round(image.width*scale);canvas.height=Math.round(image.height*scale);
+      const context=canvas.getContext('2d',{willReadFrequently:true});
+      context.drawImage(image,0,0,canvas.width,canvas.height);
+      const pixels=context.getImageData(0,0,canvas.width,canvas.height);
+      const bytes=pixels.data;
+      for(let n=0;n<bytes.length;n+=4){
+        let gray=.299*bytes[n]+.587*bytes[n+1]+.114*bytes[n+2];
+        gray=Math.max(0,Math.min(255,(gray-35)*1.35));
+        if(binary)gray=gray>145?255:0;
+        bytes[n]=bytes[n+1]=bytes[n+2]=gray;bytes[n+3]=255;
+      }
+      context.putImageData(pixels,0,0);
+      return canvas;
+    }finally{image.close();}
+  }
+  function qualityOCR(data) {
+    const text=(data?.text||'').trim();
+    const confidence=Number(data?.confidence)||0;
+    const words=(text.match(/[a-záéíóúñ]{3,}/gi)||[]).length;
+    return {text,confidence,score:confidence+Math.min(30,words)*.7};
+  }
+
   async function analyzeImage() {
     if (state.running || !state.file) return;
     showError('');
@@ -214,23 +241,35 @@
         }
       });
       const response = await worker.recognize(state.file);
-      let text = (response.data && response.data.text ? response.data.text : '').trim();
-      try{
-        const candidates=[
-          await readAddressBar(worker,state.file),
-          await readFocusedBar(worker,state.file)
-        ];
-        const focused=candidates.find(t=>EscudoEngine.extractUrls(t).some(u=>u.domain!=='No se pudo interpretar'));
-        if(focused)text+='\n'+focused;
-        else if(candidates[0])text+='\n'+candidates[0];
-      }catch(err){ console.warn('Lectura complementaria de barra:',err); }
+      let best=qualityOCR(response.data);
+      let text=best.text;
+      const photo=/image\\/hei[cf]/i.test(state.file.type)||/(?:IMG_|DCIM|foto|photo|camera)/i.test(state.file.name);
+      if(photo || best.confidence<72 || isUnreadableOCR(text)){
+        displayProgress('Mejorando fotografía...',.55);
+        try {
+          const enhanced=await photoCanvas(state.file,false);
+          const result=qualityOCR((await worker.recognize(enhanced)).data);
+          if(result.score>best.score+3){best=result;text=result.text;}
+          if(best.confidence<65 || isUnreadableOCR(text)){
+            const stronger=await photoCanvas(state.file,true);
+            const retry=qualityOCR((await worker.recognize(stronger)).data);
+            if(retry.score>best.score+3){best=retry;text=retry.text;}
+          }
+        }catch(err){console.warn('Preprocesamiento de imagen:',err);}
+      }
+      if(!photo) {
+        try{
+          const bar=await readAddressBar(worker,state.file);
+          if(EscudoEngine.extractUrls(bar).length && !text.includes(bar))text+='\\n'+bar;
+        }catch(err){console.warn('Lectura de encabezado:',err);}
+      }
       if (!text || text.length < 4) throw new Error('No se pudo leer texto suficiente. Prueba una captura nítida o utiliza la pestaña «Texto o URL».');
-      if(isUnreadableOCR(text)){
+      if(isUnreadableOCR(text) || (best.confidence<35 && EscudoEngine.extractUrls(text).length===0)){
         $('recognized-text').value=text;
         // OCR conservado internamente; no se despliega al usuario.
         $('result-empty').hidden=false;
         $('result-content').hidden=true;
-        showError('NO SE PUDO LEER LA CAPTURA CON FIABILIDAD. No se emitió una clasificación. Recorta la barra de direcciones, súbela de nuevo o introduce manualmente la URL.');
+        showError('NO SE PUDO LEER LA IMAGEN CON FIABILIDAD. Intenta con mejor iluminación, sin reflejos y enfocando el texto; o utiliza Texto o URL.');
         return;
       }
       displayProgress('Lectura completada', 1);
@@ -238,7 +277,7 @@
       // Mostrar la lectura realmente obtenida para diagnosticar errores OCR.
       // OCR conservado internamente; no se despliega al usuario.
       if (!EscudoEngine.extractUrls(text).length) {
-        showError('No se pudo identificar una URL en la captura. El resultado NO verifica la legitimidad del sitio. Revisa el texto reconocido y, si falta el dominio, escríbelo para analizarlo.');
+        showError('No se pudo identificar una URL en la captura. El resultado NO verifica la legitimidad del sitio. Si falta el enlace, escríbelo en Texto o URL.');
       }
     } catch (err) {
       console.warn('OCR:', err);
