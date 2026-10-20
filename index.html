@@ -16,7 +16,7 @@
   <script src="./engine.js?v=20261020-8" defer></script>
   <script src="./analytics-config.js" defer></script>
   <script src="./analytics.js" defer></script>
-  <script src="./app.js?v=20261020-11" defer></script>
+  <script src="./app.js?v=20261020-12" defer></script>
 <style>
 .privacy-modal[hidden]{display:none!important}.privacy-modal{position:fixed;inset:0;z-index:9999;background:rgba(9,23,40,.8);display:grid;place-items:center;padding:16px;overflow:auto}.privacy-card{background:white;border-radius:18px;padding:25px;max-width:540px;width:100%;max-height:94dvh;overflow:auto;box-shadow:0 24px 80px #050f2259}.privacy-card h2{font-size:26px;line-height:1.2;margin:9px 0}.privacy-card p,.privacy-card li{font-size:14px;line-height:1.65;color:#3b5066}.privacy-card .privacy-buttons{display:grid;gap:9px;margin-top:17px}.privacy-card button{border:0;border-radius:10px;padding:13px 16px;font-weight:800;background:#143d62;color:#fff}.privacy-card button.secondary{background:#e8eff5;color:#173d62}.privacy-menu{font-size:12px;color:#4b657d;padding:12px 0}.privacy-menu button{background:transparent;border:1px solid #aec6d5;color:#1a5374;border-radius:8px;padding:8px;font-size:12px;font-weight:700}.privacy-feedback{font-size:12px;color:#2c6273}
 </style>
@@ -57,7 +57,7 @@
             <div id="selected-drop" hidden>
               <img id="image-preview" alt="Vista previa de la captura seleccionada"/>
               <div class="image-meta"><strong id="selected-name"></strong><small id="selected-size"></small></div>
-              <span class="change-image">Cambiar imagen</span>
+              <span class="change-image">Cambiar imagen</span><button id="remove-image" type="button" style="display:inline-block;margin:12px auto 0;padding:9px 14px;border:1px solid #c93636;border-radius:9px;background:#fff;color:#b4232d;font-size:14px;font-weight:750;cursor:pointer;min-height:42px;">🗑 Eliminar captura</button>
             </div>
           </div>
           <div class="privacy-inline"><span aria-hidden="true">♧</span><div><strong>Tu captura se procesa localmente.</strong><br/>No implementamos carga de imágenes a un servidor. El motor OCR necesita descargar archivos técnicos desde Internet.</div></div>
