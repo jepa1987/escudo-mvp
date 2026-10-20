@@ -53,8 +53,54 @@ Deno.serve(async (request: Request) => {
       message: "Simulación completada. Ningún archivo eliminado."
     });
   }
-  // Bloque reservado intencionalmente: no se entrega una rutina destructiva
-  // hasta implementar transacciones de estado, auditoría, verificación de
-  // ausencia en Storage, idempotencia y autorización de tarea programada.
-  return json({ error: "Eliminación no implementada ni activada" }, 501);
+  // IMPLEMENTACIÓN FUTURA (inalcanzable mientras DELETION_ENABLED=false).
+  // Requiere además el secreto administrativo solo en el servidor.
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!serviceKey) return json({ error: "Falta configuración privada" }, 503);
+  const service = createClient(url, serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+  const details = await service.from("evidence_records")
+    .select("id,storage_path,expires_at,status,delete_attempts")
+    .lte("expires_at", now)
+    .in("status", ["pending", "delete_error"])
+    .order("expires_at", { ascending: true })
+    .limit(LIMIT);
+  if (details.error) return json({ error: "No fue posible consultar los vencimientos" }, 500);
+  const results: { id: string; deleted: boolean; detail: string }[] = [];
+  for (const item of details.data ?? []) {
+    // Revalidación en servidor para prevenir borrados fuera de plazo.
+    if (Date.parse(item.expires_at) > Date.now()) continue;
+    const claimed = await service.from("evidence_records")
+      .update({
+        status: "deleting",
+        delete_attempts: (item.delete_attempts ?? 0) + 1,
+        last_delete_error: null
+      }).eq("id", item.id).eq("status", item.status)
+      .eq("expires_at", item.expires_at).select("id");
+    if (claimed.error || claimed.data?.length !== 1) continue;
+    try {
+      const removed = await service.storage.from(BUCKET).remove([item.storage_path]);
+      if (removed.error) throw removed.error;
+      // Verificación: la operación de lectura de información debe indicar ausencia.
+      const check = await service.storage.from(BUCKET).info(item.storage_path);
+      if (!check.error) throw new Error("El objeto sigue disponible en Storage");
+      // No dar por eliminado en caso de indisponibilidad/red: aceptar solamente 404.
+      const status = Number((check.error as { status?: number; statusCode?: string }).status
+        ?? (check.error as { statusCode?: string }).statusCode);
+      if (status !== 404) throw new Error("No pudo verificarse la ausencia (sin HTTP 404)");
+      const updated = await service.from("evidence_records").update({
+        status: "deleted", deleted_at: new Date().toISOString(), last_delete_error: null
+      }).eq("id", item.id).eq("status", "deleting");
+      if (updated.error) throw updated.error;
+      results.push({ id: item.id, deleted: true, detail: "Borrado y ausencia confirmada" });
+    } catch (e) {
+      await service.from("evidence_records").update({
+        status: "delete_error",
+        last_delete_error: String(e instanceof Error ? e.message : "Error desconocido").slice(0, 300)
+      }).eq("id", item.id).eq("status", "deleting");
+      results.push({ id: item.id, deleted: false, detail: "Requiere revisión o reintento" });
+    }
+  }
+  return json({ mode: "delete", retention_days: RETENTION_DAYS, results });
 });
