@@ -16,6 +16,17 @@
 <form id="login-form" style="display:flex;gap:8px;flex-wrap:wrap"><input id="email" type="email" autocomplete="email" placeholder="correo@empresa.com" required><button type="submit">Enviar enlace seguro</button></form></details>
 <p class="warning">Si tu cuenta solo usaba enlaces por correo, primero tendrás que crear una contraseña para ese mismo usuario en Supabase Authentication. No introduzcas aquí claves del proyecto ni contraseñas de la base de datos.</p></section>
 <section id="dashboard" hidden>
+<div class="panel" aria-labelledby="password-title">
+<h2 id="password-title">Seguridad de mi cuenta</h2>
+<p class="warning">Establece una contraseña para tu cuenta actual de Supabase Auth. No se envía por correo ni se guarda en GitHub. Por seguridad, Supabase podría solicitar una nueva autenticación.</p>
+<form id="set-password-form" style="display:grid;gap:10px;max-width:440px">
+<label for="new-password">Nueva contraseña (mínimo 12 caracteres)</label>
+<input id="new-password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+<label for="confirm-password">Confirmar nueva contraseña</label>
+<input id="confirm-password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+<button id="set-password-btn" type="submit">Crear o cambiar contraseña</button>
+</form><p id="set-password-status" role="status" aria-live="polite" class="warning"></p>
+</div>
 <div class="panel" aria-labelledby="retention-title">
 <h2 id="retention-title">Simulación de retención · 30 días</h2>
 <p class="warning">Comprueba cuántos expedientes están vencidos. Solo consulta los metadatos: no descarga imágenes, no modifica datos y no elimina archivos.</p>
@@ -24,4 +35,4 @@
 </div>
 <div class="panel"><h2>Resumen</h2><div class="cards"><div class="metric"><b id="total">—</b><small>Consultas registradas</small></div><div class="metric"><b id="high">—</b><small>Riesgo elevado</small></div><div class="metric"><b id="warning">—</b><small>Precaución</small></div><div class="metric"><b id="domains">—</b><small>Dominios sospechosos distintos</small></div></div></div>
 <div class="panel"><h2>Últimos eventos <small>(máximo 500)</small></h2><p class="warning">Solo se reciben registros cuando el usuario lo autoriza. No se guardan capturas, mensajes ni URLs completas.</p><div class="table-wrap"><table><thead><tr><th>Fecha (UTC)</th><th>Riesgo</th><th>Tipo</th><th>Dominio señalado</th><th>Señales</th><th>URLs</th></tr></thead><tbody id="rows"></tbody></table></div></div></section><p id="message" role="status"></p>
-</main><script src="./analytics-config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script><script src="./admin.js?v=password2"></script></body></html>
+</main><script src="./analytics-config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script><script src="./admin.js?v=password3"></script></body></html>
