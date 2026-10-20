@@ -17,5 +17,32 @@ async function load(){
  for(const e of events){const tr=document.createElement('tr');const vals=[e.created_at?.replace('T',' ').slice(0,19)||'',e.risk,e.mode,e.flagged_domain||'—',e.signal_count,e.url_count];for(const val of vals){const td=document.createElement('td');td.textContent=String(val??'');tr.appendChild(td)}$('rows').appendChild(tr);}
 }
 $('login-form').addEventListener('submit',async event=>{event.preventDefault();message('Enviando acceso...');const {error}=await client.auth.signInWithOtp({email:$('email').value,options:{emailRedirectTo:location.origin+location.pathname}});message(error?'Error: '+error.message:'Si el correo está habilitado, revisa tu bandeja de entrada.');});
+
+async function retentionTest(){
+ const button=$('retention-test'), output=$('retention-result');
+ button.disabled=true;output.textContent='Consultando expedientes vencidos sin eliminar archivos...';
+ try{
+  const {data:{session},error:sessionError}=await client.auth.getSession();
+  if(sessionError || !session?.access_token){output.textContent='Tu sesión terminó. Inicia sesión nuevamente.';return;}
+  const response=await fetch(cfg.url.replace(/\\/$/,'')+'/functions/v1/escudo-retention',{
+   method:'POST',
+   headers:{'Authorization':'Bearer '+session.access_token,'apikey':cfg.anonKey,'Content-Type':'application/json'},
+   body:'{}',cache:'no-store'
+  });
+  const data=await response.json().catch(()=>({}));
+  if(response.ok && data.mode==='dry_run' && data.deletion_enabled===false){
+    output.textContent='Simulación completada: '+Number(data.expired_records||0)+' expedientes vencidos (máximo 50 consultados). Ningún archivo eliminado.';
+  } else if(response.status===401){
+    output.textContent='HTTP 401: autenticación rechazada. La verificación JWT legado de Edge Functions puede impedir que el token de sesión llegue a la función. No desactives protecciones todavía.';
+  } else if(response.status===403){
+    output.textContent='HTTP 403: esta cuenta no tiene permiso de ejecución. Revisa admin_users.';
+  } else {
+    output.textContent='No se completó el Dry Run (HTTP '+response.status+'). '+String(data.error||data.message||'Verifica los registros de Edge Functions.').slice(0,240);
+  }
+ } catch(error){output.textContent='No se pudo contactar la función. Comprueba la conexión y los registros de Edge Functions.'}
+ finally{button.disabled=false;}
+}
+$('retention-test').addEventListener('click',retentionTest);
+
 $('refresh').addEventListener('click',load);$('logout').addEventListener('click',async()=>{await client.auth.signOut();ui(false);message('Sesión cerrada.')});client.auth.onAuthStateChange(()=>setTimeout(load,0));load();
 })();
